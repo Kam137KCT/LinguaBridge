@@ -135,9 +135,31 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
+# SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
+# SECRET_KEY = os.getenv("SECRET_KEY")
+# DEBUG = os.getenv("DEBUG", "True") == "True"
+# if not SECRET_KEY and not DEBUG:
+    # raise ValueError("The SECRET_KEY environment variable must be set in production!")
+# Fallback only if DEBUG is True
+# SECRET_KEY = SECRET_KEY or "dev-only-insecure-key"
+
+# Load environment variables
+load_dotenv(BASE_DIR / ".env")
+
+# Configuration
 DEBUG = os.getenv("DEBUG", "True") == "True"
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
+# Security: Fetch key or handle missing values
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "dev-only-insecure-key"
+    else:
+        raise ValueError("The SECRET_KEY environment variable must be set in production!")
+
+# ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
