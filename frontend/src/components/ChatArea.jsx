@@ -17,7 +17,7 @@ function DateSeparator({ label }) {
 function TypingIndicator({ name }) {
   return (
     <div className="flex items-end gap-2 mb-2">
-      <div className="w-7 h-7 rounded-full flex-shrink-0" style={{ background: 'var(--color-fog-dim)' }} />
+      <div className="w-7 h-7 rounded-full shrink-0" style={{ background: 'var(--color-fog-dim)' }} />
       <div className="flex flex-col items-start">
         <p className="text-[11px] mb-1 ml-1" style={{ color: 'var(--color-ink-soft)' }}>{name}</p>
         <div
@@ -66,10 +66,10 @@ export default function ChatArea({ room, onMenuOpen, onToast }) {
   const [showTyping, setShowTyping] = useState(false);
   const bottomRef = useRef(null);
 
-  useEffect(() => {
+  /*useEffect(() => {
     setMessages(room.messages);
     setShowTyping(false);
-  }, [room.id]);
+  }, [room.id]);*/
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

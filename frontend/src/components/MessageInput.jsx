@@ -54,7 +54,7 @@ export default function MessageInput({ onSend }) {
       <div className="flex items-end gap-2">
         <button
           onClick={() => setShowEmoji((v) => !v)}
-          className="w-9 h-9 mb-0.5 flex items-center justify-center rounded-lg flex-shrink-0"
+          className="w-9 h-9 mb-0.5 flex items-center justify-center rounded-lg shrink-0"
           style={{ color: showEmoji ? 'var(--color-bridge)' : 'var(--color-ink-soft)', background: showEmoji ? 'var(--color-bridge-dim)' : 'transparent' }}
         >
           <Smile size={18} />

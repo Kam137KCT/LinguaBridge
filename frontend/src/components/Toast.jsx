@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { X, Check } from 'lucide-react';
 
 function Toast({ message, onDismiss }) {
@@ -11,7 +12,7 @@ function Toast({ message, onDismiss }) {
       setTimeout(onDismiss, 250);
     }, 3000);
     return () => clearTimeout(t);
-  }, []);
+  }, [onDismiss]);
 
   return (
     <div
@@ -35,10 +36,19 @@ function Toast({ message, onDismiss }) {
 }
 
 export function ToastContainer({ toasts, onDismiss }) {
+  const handleDismiss = useCallback((id) => {
+    onDismiss(id);
+  }, [onDismiss]);
+
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
       {toasts.map((t) => (
-        <Toast key={t.id} message={t.message} onDismiss={() => onDismiss(t.id)} />
+        <Toast
+          key={t.id}
+          message={t.message}
+          onDismiss={() => handleDismiss(t.id)}
+        />
+        //<Toast key={t.id} message={t.message} onDismiss={() => onDismiss(t.id)} />
       ))}
     </div>
   );

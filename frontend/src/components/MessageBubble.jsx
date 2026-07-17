@@ -36,13 +36,13 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
   if (isOwn) {
     return (
       <div className="flex items-end gap-2 flex-row-reverse mb-1.5 animate-message-in">
-        <div className="w-7 flex-shrink-0" />
+        <div className="w-7 shrink-0" />
         <div className="max-w-[72%] flex flex-col items-end">
           <div
             className="px-3.5 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] leading-relaxed text-white"
             style={{ background: 'var(--color-ink)' }}
           >
-            <p className="whitespace-pre-wrap break-words">{m.text}</p>
+            <p className="whitespace-pre-wrap-break-word">{m.text}</p>
           </div>
           <span className="font-mono text-[10px] text-gray-400 mt-1 px-1">{formatTime(m.timestamp)}</span>
         </div>
@@ -59,7 +59,7 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
 
   return (
     <div className="flex items-end gap-2 mb-1.5 animate-message-in">
-      <div className="w-7 flex-shrink-0">
+      <div className="w-7 shrink-0">
         {showAvatar && (
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center font-display text-[11px] font-600 text-white"
