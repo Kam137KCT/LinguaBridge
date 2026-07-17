@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "channels",
+    "accounts",
+    "chat",
+    "translation",
     # project apps get added here from Milestone 3 onward, e.g. "chat",
 ]
 
@@ -99,6 +102,8 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
