@@ -9,11 +9,19 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
 import os
 
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linguabridge_backend.settings")
+django_asgi_app = get_asgi_application()  # must happen before the imports below
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.security.websocket import AllowedHostsOriginValidator
+
+from chat.routing import websocket_urlpatterns
 
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-    # "websocket": ... added in Milestone 5
+    "http": django_asgi_app,
+    "websocket": AllowedHostsOriginValidator(
+        URLRouter(websocket_urlpatterns)
+    ),
+    # "websocket": URLRouter(websocket_urlpatterns)
 })

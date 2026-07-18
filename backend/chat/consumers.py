@@ -1,23 +1,27 @@
 import json
+
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+
 from .models import Room, Message, RoomMembership
 from translation.models import Translation
 from translation.services import translate
+
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
         self.room_group_name = f"chat_{self.room_id}"
 
-        # TEMPORARY identity mechanism until JWT auth (Milestone 7).
-        # NOT secure — anyone can currently claim any user_id. Do not
-        # treat a successful connection here as proof of identity.
         query_string = self.scope["query_string"].decode()
         params = dict(pair.split("=") for pair in query_string.split("&") if "=" in pair)
         self.user_id = params.get("user_id")
 
+        print(f"DEBUG: room_id={self.room_id!r}, user_id={self.user_id!r}")  # TEMP
+
         valid = await self._connection_is_valid(self.room_id, self.user_id)
+        print(f"DEBUG: valid={valid}")  # TEMP
+
         if not valid:
             await self.close()
             return
