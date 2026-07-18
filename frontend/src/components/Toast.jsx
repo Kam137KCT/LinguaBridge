@@ -48,7 +48,6 @@ export function ToastContainer({ toasts, onDismiss }) {
           message={t.message}
           onDismiss={() => handleDismiss(t.id)}
         />
-        //<Toast key={t.id} message={t.message} onDismiss={() => onDismiss(t.id)} />
       ))}
     </div>
   );

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { CURRENT_USER } from '../data/mockData';
+import { useEffect, useRef } from 'react';
 import ChatHeader from './ChatHeader';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import { useChatSocket } from '../hooks/useChatSocket';
+import { DEV_CURRENT_USER_ID, DEV_ROOM_ID } from '../config/devConfig';
 
 function DateSeparator({ label }) {
   return (
@@ -14,19 +15,19 @@ function DateSeparator({ label }) {
   );
 }
 
-function TypingIndicator({ name }) {
+function ConnectionBanner({ state }) {
+  if (state === 'open') return null;
+  const labels = {
+    connecting: 'Connecting...',
+    closed: 'Disconnected — messages will not send',
+    error: 'Connection error — messages will not send',
+  };
   return (
-    <div className="flex items-end gap-2 mb-2">
-      <div className="w-7 h-7 rounded-full shrink-0" style={{ background: 'var(--color-fog-dim)' }} />
-      <div className="flex flex-col items-start">
-        <p className="text-[11px] mb-1 ml-1" style={{ color: 'var(--color-ink-soft)' }}>{name}</p>
-        <div
-          className="px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5"
-          style={{ background: 'white', border: '1px solid var(--color-fog-dim)' }}
-        >
-          <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
-        </div>
-      </div>
+    <div
+      className="text-center text-[12px] font-500 py-1.5"
+      style={{ background: 'var(--color-marigold-dim)', color: 'var(--color-marigold)' }}
+    >
+      {labels[state]}
     </div>
   );
 }
@@ -44,67 +45,32 @@ function groupByDate(msgs) {
   return Array.from(map.entries()).map(([label, msgs]) => ({ label, msgs }));
 }
 
-// Placeholder client-side simulation — replaced by the real WebSocket
-// flow in Milestone 5. Deliberately naive: no real translation logic
-// belongs on the frontend.
-function simulateReply(room) {
-  const other = room.members.find((m) => m.id !== CURRENT_USER.id);
-  if (!other) return null;
-  return {
-    id: `reply-${Date.now()}`,
-    senderId: other.id,
-    text: '[reply]',
-    translations: { [CURRENT_USER.language]: 'Got it, thanks!' },
-    originalLang: other.language,
-    timestamp: new Date(),
-    confidence: { [CURRENT_USER.language]: 'high' },
-  };
-}
-
 export default function ChatArea({ room, onMenuOpen, onToast }) {
-  const [messages, setMessages] = useState(room.messages);
-  const [showTyping, setShowTyping] = useState(false);
+  const { messages, connectionState, sendMessage } = useChatSocket(DEV_ROOM_ID, DEV_CURRENT_USER_ID);
   const bottomRef = useRef(null);
-
-  /*useEffect(() => {
-    setMessages(room.messages);
-    setShowTyping(false);
-  }, [room.id]);*/
+  const prevCount = useRef(0);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, showTyping]);
+    if (messages.length > prevCount.current && prevCount.current > 0) {
+      const last = messages[messages.length - 1];
+      if (last.senderId !== DEV_CURRENT_USER_ID) onToast(`New message from ${last.senderName}`);
+    }
+    prevCount.current = messages.length;
+  }, [messages, onToast]);
 
   const handleSend = (text) => {
-    const newMsg = {
-      id: `msg-${Date.now()}`,
-      senderId: CURRENT_USER.id,
-      text,
-      translations: {},
-      originalLang: CURRENT_USER.language,
-      timestamp: new Date(),
-      confidence: {},
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    onToast('Message sent');
-
-    setTimeout(() => setShowTyping(true), 700);
-    setTimeout(() => {
-      setShowTyping(false);
-      const reply = simulateReply(room);
-      if (reply) {
-        setMessages((prev) => [...prev, reply]);
-        onToast('New message received');
-      }
-    }, 2400);
+    sendMessage(text);
+    // No optimistic local append — the message appears once the server
+    // broadcasts it back with real translations attached (see hook note).
   };
 
   const grouped = groupByDate(messages);
-  const otherMember = room.members.find((m) => m.id !== CURRENT_USER.id);
 
   return (
     <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--color-fog)' }}>
       <ChatHeader room={room} onMenuOpen={onMenuOpen} />
+      <ConnectionBanner state={connectionState} />
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {grouped.map(({ label, msgs }) => (
@@ -113,12 +79,11 @@ export default function ChatArea({ room, onMenuOpen, onToast }) {
             {msgs.map((msg, i) => {
               const prev = msgs[i - 1];
               const showAvatar = !prev || prev.senderId !== msg.senderId;
-              const sender = room.members.find((m) => m.id === msg.senderId);
               return (
                 <MessageBubble
                   key={msg.id}
                   message={msg}
-                  senderName={sender?.name}
+                  senderName={msg.senderName}
                   showAvatar={showAvatar}
                   showName={showAvatar}
                   isGroup={room.isGroup}
@@ -127,8 +92,6 @@ export default function ChatArea({ room, onMenuOpen, onToast }) {
             })}
           </div>
         ))}
-
-        {showTyping && otherMember && <TypingIndicator name={otherMember.name.split(' ')[0]} />}
         <div ref={bottomRef} />
       </div>
 

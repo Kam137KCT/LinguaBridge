@@ -71,7 +71,7 @@ export default function MessageInput({ onSend }) {
             onKeyDown={handleKeyDown}
             placeholder="Write a message..."
             rows={1}
-            className="flex-1 px-4 py-2.5 bg-transparent resize-none outline-none text-[13.5px] placeholder:text-gray-400 max-h-[120px] leading-relaxed"
+            className="flex-1 px-4 py-2.5 bg-transparent resize-none outline-none text-[13.5px] placeholder:text-gray-400 max-h-30 leading-relaxed"
             style={{ color: 'var(--color-ink)' }}
           />
         </div>
@@ -79,7 +79,7 @@ export default function MessageInput({ onSend }) {
         <button
           onClick={handleSend}
           disabled={!text.trim()}
-          className="w-9 h-9 mb-0.5 flex items-center justify-center rounded-lg flex-shrink-0 transition-all"
+          className="w-9 h-9 mb-0.5 flex items-center justify-center rounded-lg shrink-0 transition-all"
           style={{
             background: text.trim() ? 'var(--color-bridge)' : 'var(--color-fog-dim)',
             color: text.trim() ? 'white' : '#A9B2AF',

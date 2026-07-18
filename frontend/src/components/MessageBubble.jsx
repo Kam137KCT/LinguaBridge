@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { CURRENT_USER, LANGUAGE_LABELS } from '../data/mockData';
+import { LANGUAGE_LABELS } from '../data/mockData';
+import { DEV_CURRENT_USER_ID, DEV_CURRENT_USER_LANGUAGE } from '../config/devConfig';
 
 const CONFIDENCE_STYLES = {
   high: { color: 'var(--color-confidence-high)', bg: 'var(--color-confidence-high-bg)', label: 'High' },
@@ -31,7 +32,7 @@ function formatTime(date) {
 
 export default function MessageBubble({ message: m, senderName, showAvatar, showName, isGroup }) {
   const [showOriginal, setShowOriginal] = useState(false);
-  const isOwn = m.senderId === CURRENT_USER.id;
+  const isOwn = m.senderId === DEV_CURRENT_USER_ID;
 
   if (isOwn) {
     return (
@@ -51,11 +52,11 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
   }
 
   // Incoming message — resolve translation state for the current user's language.
-  const translated = m.translations[CURRENT_USER.language];
+  const translated = m.translations[DEV_CURRENT_USER_LANGUAGE];
   const isUnavailable = translated === null;
   const displayText = isUnavailable ? m.text : (translated ?? m.text);
   const hasTranslation = translated !== undefined && translated !== null;
-  const confidence = m.confidence?.[CURRENT_USER.language];
+  const confidence = m.confidence?.[DEV_CURRENT_USER_LANGUAGE];
 
   return (
     <div className="flex items-end gap-2 mb-1.5 animate-message-in">
@@ -88,7 +89,7 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
               : { background: 'white', color: 'var(--color-ink)', border: '1px solid var(--color-fog-dim)' }
           }
         >
-          <p className="whitespace-pre-wrap break-words">{displayText}</p>
+          <p className="whitespace-pre-wrap wrap-break-words">{displayText}</p>
 
           {isUnavailable && (
             <p className="text-[11px] italic mt-1.5" style={{ color: 'var(--color-ink-soft)' }}>

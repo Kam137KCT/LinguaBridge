@@ -44,14 +44,14 @@ export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, on
       >
         <div className="px-5 pt-5 pb-4">
             <div className="flex items-center gap-2.5 mb-5">
-            /*<div
+            {/*<div
               className="w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center"
               style={{ borderColor: 'var(--color-bridge)', transform: 'rotate(-6deg)' }}
             >
               <span className="font-display text-[13px] font-600" style={{ color: 'var(--color-bridge)' }}>LB</span>
-            </div>*/
+            </div>*/}
             <Postmark size={32} />
-            <span className="font-display text-[16px] font-600 text-[color:var(--color-ink)]">LinguaBridge</span>
+            <span className="font-display text-[16px] font-600 text-ink">LinguaBridge</span>
             <button
               onClick={onOpenProfile}
               className="ml-auto w-7 h-7 rounded-lg flex items-center justify-center"
@@ -61,7 +61,7 @@ export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, on
             </button>
           </div>
 
-          <div className="relative mb-3">
+          {/*<div className="relative mb-3">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -70,6 +70,19 @@ export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, on
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-[13px] rounded-lg outline-none placeholder:text-gray-400 text-[color:var(--color-ink)]"
               style={{ background: 'var(--color-fog)', border: '1px solid var(--color-fog-dim)' }}
+            />
+          </div>*/}
+
+          <div className="relative mb-3">
+            {/* Search Icon */}
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            {/* Search Input */}
+            <input
+              type="text"
+              placeholder="Search rooms..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-[13px] rounded-lg outline-none bg-fog border border-fog-dim text-ink"
             />
           </div>
 
@@ -108,7 +121,7 @@ export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, on
                       {room.name}
                     </span>
                     {last && (
-                      <span className="font-mono text-[10.5px] text-gray-400 ml-2 flex-shrink-0">
+                      <span className="font-mono text-[10.5px] text-gray-400 ml-2 shrink-0">
                         {formatTime(last.timestamp)}
                       </span>
                     )}
@@ -135,7 +148,7 @@ export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, on
           <button onClick={onOpenProfile} className="w-full flex items-center gap-3 p-2 rounded-lg text-left">
             <Avatar name={CURRENT_USER.name} size={32} />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-600 text-[color:var(--color-ink)] truncate">{CURRENT_USER.name}</p>
+              <p className="text-[13px] font-600 text-ink truncate">{CURRENT_USER.name}</p>
             </div>
             <span
               className="font-mono text-[10px] font-600 px-1.5 py-0.5 rounded"
