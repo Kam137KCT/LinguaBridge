@@ -17,10 +17,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         params = dict(pair.split("=") for pair in query_string.split("&") if "=" in pair)
         self.user_id = params.get("user_id")
 
-        print(f"DEBUG: room_id={self.room_id!r}, user_id={self.user_id!r}")  # TEMP
+        #print(f"DEBUG: room_id={self.room_id!r}, user_id={self.user_id!r}")  # TEMP
 
         valid = await self._connection_is_valid(self.room_id, self.user_id)
-        print(f"DEBUG: valid={valid}")  # TEMP
+        #print(f"DEBUG: valid={valid}")  # TEMP
 
         if not valid:
             await self.close()
