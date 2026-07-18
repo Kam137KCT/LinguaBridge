@@ -10,6 +10,8 @@ db.sqlite3
 staticfiles/
 media/
 backend/linguabridge_backend/test_ws.py
+backend/linguabridge_backend/test_redis_async.py
+test_channel_layer.py
 
 # ---------- Secrets / environment ----------
 .env
