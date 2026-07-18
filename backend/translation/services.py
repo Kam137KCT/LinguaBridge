@@ -79,7 +79,6 @@ def _run_model(text, model_name, target_token=None):
 
     return translated_text, avg_log_prob
 
-
 def translate(text, source_lang, target_lang):
     """Returns (translated_text, confidence), or (None, None) if no
     translation path exists for this language pair at all — the
