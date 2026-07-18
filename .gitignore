@@ -9,6 +9,7 @@ __pycache__/
 db.sqlite3
 staticfiles/
 media/
+backend/linguabridge_backend/test_ws.py
 
 # ---------- Secrets / environment ----------
 .env
