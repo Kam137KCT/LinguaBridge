@@ -52,7 +52,7 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
   }
 
   // Incoming message — resolve translation state for the current user's language.
-  const translated = m.translations[DEV_CURRENT_USER_LANGUAGE];
+  const translated = m.translations?.[DEV_CURRENT_USER_LANGUAGE];
   const isUnavailable = translated === null;
   const displayText = isUnavailable ? m.text : (translated ?? m.text);
   const hasTranslation = translated !== undefined && translated !== null;
@@ -76,7 +76,8 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
           <p className="text-[11px] font-600 mb-1 ml-1" style={{ color: 'var(--color-ink-soft)' }}>
             {senderName}
             <span className="font-mono ml-1.5 text-[10px] font-400 opacity-70">
-              · {LANGUAGE_LABELS[m.originalLang]}
+              {/*Changed m.originalLang to m.originalLanguage */}
+              · {LANGUAGE_LABELS[m.originalLanguage]} 
             </span>
           </p>
         )}
@@ -112,7 +113,8 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
                   style={{ color: 'var(--color-ink-soft)' }}
                 >
                   <ChevronDown size={10} className={`transition-transform ${showOriginal ? 'rotate-180' : ''}`} />
-                  {showOriginal ? 'Hide original' : `Show original (${LANGUAGE_LABELS[m.originalLang]})`}
+                  {/* Changed m.originalLang to m.originalLanguage */}
+                  {showOriginal ? 'Hide original' : `Show original (${LANGUAGE_LABELS[m.originalLanguage]})`}
                 </button>
               </div>
             </div>
