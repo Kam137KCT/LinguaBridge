@@ -65,6 +65,9 @@ def _run_model(text, model_name, target_token=None):
         )
 
     translated_text = tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+    
+    if not output.scores:
+        return translated_text, -999.0
 
     # Average log-probability of the chosen token at each generation step.
     token_scores = torch.stack(output.scores, dim=0)  # (steps, batch, vocab)

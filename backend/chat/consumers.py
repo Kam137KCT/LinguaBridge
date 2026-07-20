@@ -6,6 +6,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Room, Message, RoomMembership
 from translation.models import Translation
 from translation.services import translate
+from urllib.parse import parse_qs
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -14,10 +15,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_group_name = f"chat_{self.room_id}"
 
         query_string = self.scope["query_string"].decode()
-        params = dict(pair.split("=") for pair in query_string.split("&") if "=" in pair)
-        self.user_id = params.get("user_id")
+        parsed_params = parse_qs(query_string)
+
+        # params = dict(pair.split("=") for pair in query_string.split("&") if "=" in pair)
+        # self.user_id = params.get("user_id")
 
         #print(f"DEBUG: room_id={self.room_id!r}, user_id={self.user_id!r}")  # TEMP
+
+        # parse_qs returns lists for values; extract the first element safely
+        user_id_list = parsed_params.get("user_id")
+        self.user_id = user_id_list[0] if user_id_list else None
 
         valid = await self._connection_is_valid(self.room_id, self.user_id)
         #print(f"DEBUG: valid={valid}")  # TEMP
@@ -61,6 +68,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _save_message_and_translate(self, room_id, sender_id, text):
+        # FIX: Cast to integer to prevent strict PostgreSQL type validation failures
+        int_room_id = int(room_id)
+        int_sender_id = int(sender_id)
+
         room = Room.objects.get(id=room_id)
         sender = RoomMembership.objects.get(room=room, user_id=sender_id).user
 
