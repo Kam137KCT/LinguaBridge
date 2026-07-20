@@ -25,7 +25,7 @@ export default function ProfilePage({ currentUser, onUserUpdate, onBack, onLogou
       if (response.ok) {
         const updatedUser = await response.json();
         
-        // 💡 FIX: Update the global app state so other components instantly see the new language
+        // Update the global app state so other components instantly see the new language
         if (onUserUpdate) {
           onUserUpdate(updatedUser);
         }
@@ -64,7 +64,7 @@ export default function ProfilePage({ currentUser, onUserUpdate, onBack, onLogou
           className="rounded-xl p-6 mb-4 flex flex-col items-center"
           style={{ background: 'white', border: '1px solid var(--color-fog-dim)' }}
         >
-          {/* 💡 FIX: Render live user properties instead of mock data */}
+          {/* Render live user properties instead of mock data */}
           <Avatar name={currentUser?.username || 'User'} size={72} />
           <h2 className="font-display text-[17px] mt-4" style={{ color: 'var(--color-ink)' }}>
             {currentUser?.username || 'User'}
