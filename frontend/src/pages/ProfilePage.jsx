@@ -1,17 +1,43 @@
 import { useState } from 'react';
 import { ArrowLeft, LogOut, Check } from 'lucide-react';
-import { CURRENT_USER, LANGUAGE_NAMES } from '../data/mockData';
+import { LANGUAGE_NAMES } from '../data/mockData'; // Keep this for display names!
 import Avatar from '../components/Avatar';
 
 const LANGUAGES = ['en', 'ne', 'fr', 'es'];
 
-export default function ProfilePage({ onBack, onLogout }) {
-  const [language, setLanguage] = useState(CURRENT_USER.language);
+// Accept the live `currentUser` and an `onUserUpdate` callback as props
+export default function ProfilePage({ currentUser, onUserUpdate, onBack, onLogout }) {
+  // Use the database naming convention (preferred_language) with an English fallback
+  const [language, setLanguage] = useState(currentUser?.preferred_language || 'en');
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1800);
+  const handleSave = async () => {
+    try {
+      const response = await fetch('/api/accounts/profile/', { 
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify({ preferred_language: language }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        
+        // 💡 FIX: Update the global app state so other components instantly see the new language
+        if (onUserUpdate) {
+          onUserUpdate(updatedUser);
+        }
+
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1800);
+      } else {
+        console.error('Failed to save language settings to the server.');
+      }
+    } catch (error) {
+      console.error('Network error saving language preference:', error);
+    }
   };
 
   return (
@@ -38,8 +64,11 @@ export default function ProfilePage({ onBack, onLogout }) {
           className="rounded-xl p-6 mb-4 flex flex-col items-center"
           style={{ background: 'white', border: '1px solid var(--color-fog-dim)' }}
         >
-          <Avatar name={CURRENT_USER.name} size={72} />
-          <h2 className="font-display text-[17px] mt-4" style={{ color: 'var(--color-ink)' }}>{CURRENT_USER.name}</h2>
+          {/* 💡 FIX: Render live user properties instead of mock data */}
+          <Avatar name={currentUser?.username || 'User'} size={72} />
+          <h2 className="font-display text-[17px] mt-4" style={{ color: 'var(--color-ink)' }}>
+            {currentUser?.username || 'User'}
+          </h2>
         </div>
 
         <div className="rounded-xl p-5" style={{ background: 'white', border: '1px solid var(--color-fog-dim)' }}>
@@ -53,11 +82,11 @@ export default function ProfilePage({ onBack, onLogout }) {
             style={{ background: 'var(--color-fog)', border: '1px solid var(--color-fog-dim)', color: 'var(--color-ink)' }}
           >
             {LANGUAGES.map((l) => (
-              <option key={l} value={l}>{LANGUAGE_NAMES[l]}</option>
+              <option key={l} value={l}>{LANGUAGE_NAMES[l] || l}</option>
             ))}
           </select>
           <p className="text-[11.5px] mt-2" style={{ color: 'var(--color-ink-soft)' }}>
-            All incoming messages will be translated to {LANGUAGE_NAMES[language]}.
+            All incoming messages will be translated to {LANGUAGE_NAMES[language] || language}.
           </p>
         </div>
 

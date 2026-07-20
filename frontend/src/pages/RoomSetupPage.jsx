@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { ArrowLeft, Copy, Check, Users, MessageCircle } from 'lucide-react';
+import { createRoom, joinRoom } from '../api/client';
+import { DEV_CURRENT_USER_ID } from '../config/devConfig';
 
-function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0/O, 1/I)
-  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
+// function generateRoomCode() {
+//   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0/O, 1/I)
+//   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+// }
 
 export default function RoomSetupPage({ onBack, onRoomReady }) {
   const [mode, setMode] = useState('create'); // 'create' | 'join'
@@ -13,11 +15,18 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
   const [createdCode, setCreatedCode] = useState(null);
   const [copied, setCopied] = useState(false);
   const [joinError, setJoinError] = useState('');
+  const [createRoom, setCreatedRoom] = useState(null);
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     if (!roomName.trim()) return;
-    setCreatedCode(generateRoomCode());
+    try {
+      const room = await createRoom(DEV_CURRENT_USER_ID, roomName.trim(), true);
+      setCreatedCode(room.invite_code);
+      setCreatedRoom(room);
+    } catch (err) {
+      setJoinError(err.message); // reusing the same error slot for simplicity
+    }
   };
 
   const handleCopy = () => {
@@ -26,15 +35,20 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const handleJoin = (e) => {
+  const handleJoin = async (e) => {
     e.preventDefault();
     const code = joinCode.trim().toUpperCase();
     if (code.length !== 6) {
       setJoinError('Room codes are 6 characters.');
       return;
     }
-    setJoinError('');
-    onRoomReady({ name: `Room ${code}`, isGroup: true });
+    try {
+      await joinRoom(DEV_CURRENT_USER_ID, code);
+      setJoinError('');
+      onRoomReady();
+    } catch (err) {
+      setJoinError(err.message);
+    }
   };
 
   const tabStyle = (active) => ({
@@ -53,7 +67,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
           <ArrowLeft size={15} /> Back
         </button>
 
-        <h1 className="font-display text-[26px] text-[color:var(--color-ink)] mb-1">Start a room</h1>
+        <h1 className="font-display text-[26px] text-ink mb-1">Start a room</h1>
         <p className="text-[14px] mb-6" style={{ color: 'var(--color-ink-soft)' }}>
           Create a new room to invite others, or join one with a code.
         </p>
@@ -97,7 +111,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
                 {copied ? 'Copied' : 'Copy code'}
               </button>
               <button
-                onClick={() => onRoomReady({ name: roomName, isGroup: true })}
+                onClick={() => onRoomReady()}
                 className="w-full py-2.5 text-white text-[14px] font-600 rounded-lg"
                 style={{ background: 'var(--color-ink)' }}
               >
@@ -114,7 +128,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
                   type="text" required value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
                   placeholder="e.g. Project Team, Family Chat"
-                  className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-400"
+                  className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
                   style={{ border: '1px solid #D5DAD8' }}
                 />
               </div>
@@ -140,7 +154,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="ABC123"
                 maxLength={6}
-                className="w-full px-3.5 py-2.5 text-[16px] font-mono tracking-[0.2em] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-300 text-center"
+                className="w-full px-3.5 py-2.5 text-[16px] font-mono tracking-[0.2em] rounded-lg outline-none bg-white text-ink placeholder:text-gray-300 text-center"
                 style={{ border: '1px solid #D5DAD8' }}
               />
               {joinError && (

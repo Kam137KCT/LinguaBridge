@@ -3,7 +3,9 @@ import { CURRENT_USER, LANGUAGE_LABELS } from '../data/mockData';
 import Avatar from './Avatar';
 
 export default function ChatHeader({ room, onMenuOpen }) {
-  const others = room.members.filter((m) => m.id !== CURRENT_USER.id);
+  const membersList = room.members || [];
+  // const others = room.members.filter((m) => m.id !== CURRENT_USER.id);
+  const others = membersList.filter((m) => m.id !== CURRENT_USER.id);
 
   return (
     <div
@@ -24,9 +26,12 @@ export default function ChatHeader({ room, onMenuOpen }) {
         <h2 className="text-[14px] font-600 truncate" style={{ color: 'var(--color-ink)' }}>
           {room.name}
         </h2>
-        <p className="text-[12px]" style={{ color: room.isOnline ? 'var(--color-bridge)' : 'var(--color-ink-soft)' }}>
+        {/* <p className="text-[12px]" style={{ color: room.isOnline ? 'var(--color-bridge)' : 'var(--color-ink-soft)' }}>
           {room.isGroup ? `${room.members.length} members` : room.isOnline ? 'Online' : 'Offline'}
-        </p>
+        </p> */}
+        <p className="text-[12px]" style={{ color: room.isOnline ? 'var(--color-bridge)' : 'var(--color-ink-soft)' }}>
+          {room.isGroup ? `${membersList.length} members` : room.isOnline ? 'Online' : 'Offline'}
+          </p>
       </div>
 
       {/* Language badges — shows every language this message will need

@@ -17,16 +17,23 @@ function formatTime(date) {
 // back to the original if no translation exists for that pair — this
 // mirrors the real per-recipient translation behavior.
 function getPreview(room) {
+  // SAFEGUARD: If messages array doesn't exist, return empty preview immediately
+  if (!room?.messages) return { text: '', unavailable: false };
+
   const last = room.messages[room.messages.length - 1];
   if (!last) return { text: '', unavailable: false };
   if (last.senderId === CURRENT_USER.id) return { text: last.text, unavailable: false };
-  const translated = last.translations[CURRENT_USER.language];
+  
+  // SAFEGUARD: Avoid crashing if translations object is completely missing
+  const translations = last.translations || {};
+  const translated = translations[CURRENT_USER.language];
+  
   if (translated === undefined) return { text: last.text, unavailable: false };
   if (translated === null) return { text: last.text, unavailable: true };
   return { text: translated, unavailable: false };
 }
 
-export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, onOpenProfile, onNewRoom }) {
+export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, onClose, onOpenProfile, onNewRoom }) {
   const [search, setSearch] = useState('');
 
   const filtered = rooms.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()));
@@ -91,6 +98,11 @@ export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, on
             className="w-full flex items-center justify-center gap-1.5 py-2 text-[12.5px] font-600 rounded-lg"
             style={{ background: 'var(--color-bridge-dim)', color: 'var(--color-bridge)' }}
           >
+            {loading && (
+              <p className="text-[12.5px] text-center mt-6" style={{ color: 'var(--color-ink-soft)' }}>
+                Loading rooms...
+              </p>
+            )}
             <Plus size={14} /> New room
           </button>
         </div>
@@ -98,7 +110,10 @@ export default function Sidebar({ rooms, activeId, onSelect, isOpen, onClose, on
         <div className="flex-1 overflow-y-auto px-3 pb-4">
           {filtered.map((room) => {
             const preview = getPreview(room);
-            const last = room.messages[room.messages.length - 1];
+
+            // SAFEGUARD: Fallback to an empty array if messages is undefined
+            const messages = room.messages || [];
+            const last = messages[messages.length - 1];
             const isActive = room.id === activeId;
 
             return (

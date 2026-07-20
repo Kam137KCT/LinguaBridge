@@ -25,9 +25,9 @@ function PostcardStack() {
           }}
         >
           <div className="flex items-start justify-between gap-3">
-            <p className="font-display text-[15px] text-[color:var(--color-ink)] leading-snug">{c.text}</p>
+            <p className="font-display text-[15px] text-ink leading-snug">{c.text}</p>
             <span
-              className="font-mono text-[10px] font-600 px-1.5 py-0.5 rounded flex-shrink-0"
+              className="font-mono text-[10px] font-600 px-1.5 py-0.5 rounded shrink-0"
               style={{ background: 'var(--color-bridge-dim)', color: 'var(--color-bridge)' }}
             >
               {c.lang}
@@ -79,10 +79,10 @@ export default function LoginPage({ onLogin, onGoRegister }) {
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <Postmark size={32} />
-            <span className="font-display text-lg text-[color:var(--color-ink)]">LinguaBridge</span>
+            <span className="font-display text-lg text-ink">LinguaBridge</span>
           </div>
 
-          <h1 className="font-display text-[28px] text-[color:var(--color-ink)] mb-1">Welcome back</h1>
+          <h1 className="font-display text-[28px] text-ink mb-1">Welcome back</h1>
           <p className="text-[14px] mb-8" style={{ color: 'var(--color-ink-soft)' }}>Sign in to keep the conversation going</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,7 +96,7 @@ export default function LoginPage({ onLogin, onGoRegister }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-400 transition-all"
+                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400 transition-all"
                 style={{ border: '1px solid #D5DAD8' }}
                 onFocus={(e) => (e.target.style.borderColor = 'var(--color-bridge)')}
                 onBlur={(e) => (e.target.style.borderColor = '#D5DAD8')}
@@ -114,7 +114,7 @@ export default function LoginPage({ onLogin, onGoRegister }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-400"
+                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
                   style={{ border: '1px solid #D5DAD8' }}
                   onFocus={(e) => (e.target.style.borderColor = 'var(--color-bridge)')}
                   onBlur={(e) => (e.target.style.borderColor = '#D5DAD8')}
