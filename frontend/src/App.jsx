@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { ROOMS as INITIAL_ROOMS } from './data/mockData';
+import { useState, useCallback, useEffect } from 'react';
+import { listRooms } from './api/client';
+import { DEV_CURRENT_USER_ID } from './config/devConfig';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import EmptyState from './components/EmptyState';
@@ -10,11 +11,11 @@ import ProfilePage from './pages/ProfilePage';
 import { ToastContainer } from './components/Toast';
 
 let toastCounter = 0;
-let roomCounter = 0;
 
 export default function App() {
-  const [page, setPage] = useState('login'); // login | register | chat | roomSetup | profile
-  const [rooms, setRooms] = useState(INITIAL_ROOMS);
+  const [page, setPage] = useState('login');
+  const [rooms, setRooms] = useState([]);
+  const [roomsLoading, setRoomsLoading] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -28,9 +29,27 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const refreshRooms = useCallback(async () => {
+    setRoomsLoading(true);
+    try {
+      const data = await listRooms(DEV_CURRENT_USER_ID);
+      // Backend field is is_group (snake_case) — normalize to isGroup
+      // here so components don't need to know about that difference.
+      setRooms(data.map((r) => ({ ...r, isGroup: r.is_group, isOnline: true })));
+    } catch (err) {
+      addToast(`Couldn't load rooms: ${err.message}`);
+    } finally {
+      setRoomsLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    if (page === 'chat') refreshRooms();
+  }, [page, refreshRooms]);
+
   const handleLogin = () => {
     setPage('chat');
-    setTimeout(() => addToast('Welcome back, Alex Chen'), 300);
+    setTimeout(() => addToast('Welcome back'), 300);
   };
 
   const handleRegister = () => {
@@ -48,33 +67,20 @@ export default function App() {
     setSidebarOpen(false);
   };
 
-  const handleRoomReady = ({ name, isGroup }) => {
-    const newRoom = {
-      id: `new-${++roomCounter}`,
-      name,
-      isGroup,
-      isOnline: true,
-      members: [{ id: 'me', name: 'Alex Chen', language: 'en' }],
-      messages: [],
-    };
-    setRooms((prev) => [newRoom, ...prev]);
-    setActiveId(newRoom.id);
+  const handleRoomReady = async () => {
+    await refreshRooms();
     setPage('chat');
-    addToast(`Joined "${name}"`);
   };
 
   if (page === 'login') {
     return <LoginPage onLogin={handleLogin} onGoRegister={() => setPage('register')} />;
   }
-
   if (page === 'register') {
     return <RegisterPage onRegister={handleRegister} onGoLogin={() => setPage('login')} />;
   }
-
   if (page === 'roomSetup') {
     return <RoomSetupPage onBack={() => setPage('chat')} onRoomReady={handleRoomReady} />;
   }
-
   if (page === 'profile') {
     return (
       <>
@@ -90,6 +96,7 @@ export default function App() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar
         rooms={rooms}
+        loading={roomsLoading}
         activeId={activeId || ''}
         onSelect={handleSelectRoom}
         isOpen={sidebarOpen}
@@ -98,7 +105,7 @@ export default function App() {
         onNewRoom={() => setPage('roomSetup')}
       />
 
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0">
         {activeRoom ? (
           <ChatArea
             key={activeRoom.id}
@@ -108,20 +115,9 @@ export default function App() {
           />
         ) : (
           <div className="flex-1 flex flex-col">
-            <div
-              className="lg:hidden flex items-center gap-3 px-4 py-3"
-              style={{ background: 'white', borderBottom: '1px solid var(--color-fog-dim)' }}
-            >
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg"
-                style={{ background: 'var(--color-fog)', color: 'var(--color-ink-soft)' }}
-              >
-                ☰
-              </button>
-              <span className="font-display text-[15px] font-600" style={{ color: 'var(--color-ink)' }}>
-                LinguaBridge
-              </span>
+            <div className="lg:hidden flex items-center gap-3 px-4 py-3" style={{ background: 'white', borderBottom: '1px solid var(--color-fog-dim)' }}>
+              <button onClick={() => setSidebarOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: 'var(--color-fog)', color: 'var(--color-ink-soft)' }}>☰</button>
+              <span className="font-display text-[15px] font-600" style={{ color: 'var(--color-ink)' }}>LinguaBridge</span>
             </div>
             <EmptyState />
           </div>
