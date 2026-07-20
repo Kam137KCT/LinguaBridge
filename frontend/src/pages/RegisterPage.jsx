@@ -65,10 +65,10 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <Postmark size={32} />
-            <span className="font-display text-lg text-[color:var(--color-ink)]">LinguaBridge</span>
+            <span className="font-display text-lg text-ink">LinguaBridge</span>
           </div>
 
-          <h1 className="font-display text-[28px] text-[color:var(--color-ink)] mb-1">Create account</h1>
+          <h1 className="font-display text-[28px] text-ink mb-1">Create account</h1>
           <p className="text-[14px] mb-8" style={{ color: 'var(--color-ink-soft)' }}>Start chatting across languages</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,7 +77,7 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
               <input
                 type="text" required value={form.fullName} onChange={set('fullName')}
                 placeholder="Alex Chen"
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-400"
+                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
                 style={inputStyle}
               />
             </div>
@@ -87,7 +87,7 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
               <input
                 type="email" required value={form.email} onChange={set('email')}
                 placeholder="you@example.com"
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-400"
+                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
                 style={inputStyle}
               />
             </div>
@@ -99,7 +99,7 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
                   type={showPassword ? 'text' : 'password'} required
                   value={form.password} onChange={set('password')}
                   placeholder="Min 8 characters"
-                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-400"
+                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
                   style={inputStyle}
                 />
                 <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -115,7 +115,7 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
                   type="password" required
                   value={form.confirmPassword} onChange={set('confirmPassword')}
                   placeholder="Repeat your password"
-                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)] placeholder:text-gray-400"
+                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
                   style={inputStyle}
                 />
                 {form.confirmPassword && form.confirmPassword === form.password && (
@@ -130,7 +130,7 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
               <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Preferred language</label>
               <select
                 value={form.language} onChange={set('language')}
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-[color:var(--color-ink)]"
+                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink"
                 style={inputStyle}
               >
                 {LANGUAGES.map((l) => (
