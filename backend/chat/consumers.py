@@ -6,29 +6,20 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Room, Message, RoomMembership
 from translation.models import Translation
 from translation.services import translate
-from urllib.parse import parse_qs
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
         self.room_group_name = f"chat_{self.room_id}"
+        self.user = self.scope.get("user")
 
-        query_string = self.scope["query_string"].decode()
-        parsed_params = parse_qs(query_string)
+        # Reject if user is unauthenticated or anonymous
+        if not self.user or getattr(self.user, "is_anonymous", False):
+            await self.close()
+            return
 
-        # params = dict(pair.split("=") for pair in query_string.split("&") if "=" in pair)
-        # self.user_id = params.get("user_id")
-
-        #print(f"DEBUG: room_id={self.room_id!r}, user_id={self.user_id!r}")  # TEMP
-
-        # parse_qs returns lists for values; extract the first element safely
-        user_id_list = parsed_params.get("user_id")
-        self.user_id = user_id_list[0] if user_id_list else None
-
-        valid = await self._connection_is_valid(self.room_id, self.user_id)
-        #print(f"DEBUG: valid={valid}")  # TEMP
-
+        valid = await self._connection_is_valid(self.room_id, self.user.id)
         if not valid:
             await self.close()
             return
@@ -46,15 +37,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not text:
             return
 
-        message_payload = await self._save_message_and_translate(self.room_id, self.user_id, text)
+        message_payload = await self._save_message_and_translate(self.room_id, self.user, text)
 
-        # Broadcasts ONE payload containing every recipient's translation
-        # (translations: {lang: text}). Each connected client picks out
-        # its own language client-side — matches the data shape the
-        # frontend has used since Milestone 2's mockData.js.
+        # Broadcast payload containing all recipient translations
         await self.channel_layer.group_send(
-            self.room_group_name,
-            {"type": "chat.message", "message": message_payload},
+            self.room_group_name, {"type": "chat.message", "message": message_payload},
         )
 
     async def chat_message(self, event):
@@ -67,13 +54,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return RoomMembership.objects.filter(room_id=room_id, user_id=user_id).exists()
 
     @database_sync_to_async
-    def _save_message_and_translate(self, room_id, sender_id, text):
-        # FIX: Cast to integer to prevent strict PostgreSQL type validation failures
-        int_room_id = int(room_id)
-        int_sender_id = int(sender_id)
-
+    def _save_message_and_translate(self, room_id, sender, text):
         room = Room.objects.get(id=room_id)
-        sender = RoomMembership.objects.get(room=room, user_id=sender_id).user
 
         msg = Message.objects.create(
             room=room,
@@ -84,19 +66,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         other_members = (
             RoomMembership.objects.filter(room=room)
-            .exclude(user_id=sender_id)
+            .exclude(user=sender)
             .select_related("user")
         )
-        target_languages = {m.user.preferred_language for m in other_members}
+        target_languages = {m.user.preferred_language for m in other_members if m.user.preferred_language}
 
         translations = {}
         confidence = {}
         for lang in target_languages:
             translated_text, conf = translate(text, sender.preferred_language, lang)
             Translation.objects.create(
-                message=msg, target_language=lang, translated_text=translated_text, confidence=conf
+                message=msg,
+                target_language=lang,
+                translated_text=translated_text,
+                confidence=conf,
             )
-            translations[lang] = translated_text  # None here => "Translation unavailable"
+            translations[lang] = translated_text
             confidence[lang] = conf
 
         return {
