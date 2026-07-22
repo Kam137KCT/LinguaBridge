@@ -124,9 +124,24 @@ REST_FRAMEWORK = {
     ),
 }
 
+# SIMPLE_JWT = {
+#     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+#     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+# }
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    # Expiration time for access tokens (e.g., 15 minutes, 1 hour, etc.)
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    
+    # Expiration time for refresh tokens (e.g., 1 day, 7 days, 30 days)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    
+    # --- Optional Security Settings ---
+    # Issue a new refresh token whenever a token is refreshed
+    'ROTATE_REFRESH_TOKENS': True,
+    
+    # Invalidate the old refresh token after it is rotated
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 LANGUAGE_CODE = "en-us"
