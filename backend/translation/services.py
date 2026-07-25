@@ -93,10 +93,13 @@ def translate(text, source_lang, target_lang):
         return None, None  # e.g. en->ne right now — genuinely unsupported
 
     cache_key = _cache_key(text, source_lang, target_lang)
-    cached = _redis_client.get(cache_key)
-    if cached:
-        data = json.loads(cached)
-        return data["text"], data["confidence"]
+    try:
+        cached = _redis_client.get(cache_key)
+        if cached:
+            data = json.loads(cached)
+            return data["text"], data["confidence"]
+    except redis.RedisError:
+        pass
 
     pivot = resolve_pivot(source_lang, target_lang)
 
@@ -117,8 +120,11 @@ def translate(text, source_lang, target_lang):
 
     confidence = _confidence_from_score(avg_log_prob)
 
-    _redis_client.setex(
-        cache_key, CACHE_TTL_SECONDS, json.dumps({"text": translated_text, "confidence": confidence})
-    )
+    try:
+        _redis_client.setex(
+            cache_key, CACHE_TTL_SECONDS, json.dumps({"text": translated_text, "confidence": confidence})
+        )
+    except redis.RedisError:
+        pass
 
     return translated_text, confidence

@@ -1,3 +1,4 @@
+# chat/views.py
 from django.shortcuts import get_object_or_404
 from rest_framework import status, permissions
 from rest_framework.pagination import PageNumberPagination
@@ -13,10 +14,6 @@ class MessageHistoryPagination(PageNumberPagination):
 
 
 class RoomListCreateView(APIView):
-    """
-    GET  /api/rooms/                  -> Get rooms the authenticated user belongs to
-    POST /api/rooms/ {name, is_group} -> Create a new room + creator membership
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -26,7 +23,7 @@ class RoomListCreateView(APIView):
 
     def post(self, request):
         name = request.data.get("name", "").strip()
-        is_group = bool(request.data.get("is_group", False))
+        is_group = bool(request.data.get("is_group", False) or request.data.get("isGroup", False))
 
         if not name:
             return Response(
@@ -42,9 +39,6 @@ class RoomListCreateView(APIView):
 
 
 class RoomJoinView(APIView):
-    """
-    POST /api/rooms/join/ {invite_code} -> Join a room using an invite code
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -68,16 +62,12 @@ class RoomJoinView(APIView):
 
 
 class MessageHistoryView(APIView):
-    """
-    GET /api/rooms/<room_id>/messages/ -> Fetch paginated chat history for a room
-    """
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = MessageHistoryPagination
 
     def get(self, request, room_id):
         room = get_object_or_404(Room, id=room_id)
 
-        # Check membership against the authenticated user
         if not RoomMembership.objects.filter(room=room, user=request.user).exists():
             return Response(
                 {"detail": "Not a member of this room."}, 
@@ -86,7 +76,7 @@ class MessageHistoryView(APIView):
 
         messages = (
             Message.objects.filter(room=room)
-            .select_related("sender")
+            .select_related("sender", "room")
             .prefetch_related("translations")
             .order_by("-created_at")
         )
@@ -94,7 +84,6 @@ class MessageHistoryView(APIView):
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(messages, request)
         if page is not None:
-            # Reverse the page list so newest batch displays chronologically (oldest -> newest)
             page.reverse()
             serializer = MessageSerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)

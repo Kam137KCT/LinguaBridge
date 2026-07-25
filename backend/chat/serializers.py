@@ -1,3 +1,4 @@
+# chat/serializers.py
 from rest_framework import serializers
 
 from .models import Room, Message
@@ -12,6 +13,8 @@ class RoomMemberSerializer(serializers.Serializer):
 
 class RoomSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
+    # isGroup = serializers.BooleanField(source="is_group")
+    # inviteCode = serializers.CharField(source="invite_code")
 
     class Meta:
         model = Room
@@ -23,11 +26,10 @@ class RoomSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    """Reuses the same translations/confidence dict shape the WebSocket
-    consumer already broadcasts, so the frontend's normalizeMessage()
+    """Reuses the same translations/confidence dict shape the WebSocket 
+    consumer already broadcasts, so the frontend's normalizeMessage() 
     doesn't need a separate code path for history vs. live messages."""
-
-    roomId = serializers.IntegerField(source="room.id")
+    roomId = serializers.IntegerField(source="room_id")
     senderId = serializers.IntegerField(source="sender.id")
     senderName = serializers.CharField(source="sender.username")
     originalLanguage = serializers.CharField(source="original_language")

@@ -13,7 +13,7 @@ def get_user_from_token(token_str):
     try:
         token = AccessToken(token_str)
         return User.objects.get(id=token["user_id"])
-    except (TokenError, User.DoesNotExist):
+    except (TokenError, User.DoesNotExist, KeyError):
         return None
 
 
