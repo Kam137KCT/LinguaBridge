@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { LANGUAGE_LABELS } from '../data/mockData';
-import { DEV_CURRENT_USER_ID, DEV_CURRENT_USER_LANGUAGE } from '../config/devConfig';
 
 const CONFIDENCE_STYLES = {
   high: { color: 'var(--color-confidence-high)', bg: 'var(--color-confidence-high-bg)', label: 'High' },
@@ -9,9 +8,6 @@ const CONFIDENCE_STYLES = {
   low: { color: 'var(--color-confidence-low)', bg: 'var(--color-confidence-low-bg)', label: 'Low' },
 };
 
-// The confidence badge is styled as a small rotated "stamp" sitting on
-// the dashed seam between translated and original text — the page's
-// signature element, reused at bubble scale.
 function ConfidenceStamp({ level }) {
   const s = CONFIDENCE_STYLES[level];
   if (!s) return null;
@@ -30,9 +26,10 @@ function formatTime(date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function MessageBubble({ message: m, senderName, showAvatar, showName, isGroup }) {
+export default function MessageBubble({ message: m, senderName, showAvatar, showName, isGroup, currentUser }) {
   const [showOriginal, setShowOriginal] = useState(false);
-  const isOwn = m.senderId === DEV_CURRENT_USER_ID;
+  const isOwn = m.senderId === currentUser.id;
+  const userLang = currentUser.preferred_language ?? currentUser.language;
 
   if (isOwn) {
     return (
@@ -43,7 +40,7 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
             className="px-3.5 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] leading-relaxed text-white"
             style={{ background: 'var(--color-ink)' }}
           >
-            <p className="whitespace-pre-wrap-break-word">{m.text}</p>
+            <p className="whitespace-pre-wrap break-words">{m.text}</p>
           </div>
           <span className="font-mono text-[10px] text-gray-400 mt-1 px-1">{formatTime(m.timestamp)}</span>
         </div>
@@ -51,12 +48,11 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
     );
   }
 
-  // Incoming message — resolve translation state for the current user's language.
-  const translated = m.translations?.[DEV_CURRENT_USER_LANGUAGE];
+  const translated = m.translations?.[userLang];
   const isUnavailable = translated === null;
   const displayText = isUnavailable ? m.text : (translated ?? m.text);
   const hasTranslation = translated !== undefined && translated !== null;
-  const confidence = m.confidence?.[DEV_CURRENT_USER_LANGUAGE];
+  const confidence = m.confidence?.[userLang];
 
   return (
     <div className="flex items-end gap-2 mb-1.5 animate-message-in">
@@ -76,8 +72,7 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
           <p className="text-[11px] font-600 mb-1 ml-1" style={{ color: 'var(--color-ink-soft)' }}>
             {senderName}
             <span className="font-mono ml-1.5 text-[10px] font-400 opacity-70">
-              {/*Changed m.originalLang to m.originalLanguage */}
-              · {LANGUAGE_LABELS[m.originalLanguage]} 
+              · {LANGUAGE_LABELS[m.originalLang]}
             </span>
           </p>
         )}
@@ -90,7 +85,7 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
               : { background: 'white', color: 'var(--color-ink)', border: '1px solid var(--color-fog-dim)' }
           }
         >
-          <p className="whitespace-pre-wrap wrap-break-words">{displayText}</p>
+          <p className="whitespace-pre-wrap break-words">{displayText}</p>
 
           {isUnavailable && (
             <p className="text-[11px] italic mt-1.5" style={{ color: 'var(--color-ink-soft)' }}>
@@ -113,8 +108,7 @@ export default function MessageBubble({ message: m, senderName, showAvatar, show
                   style={{ color: 'var(--color-ink-soft)' }}
                 >
                   <ChevronDown size={10} className={`transition-transform ${showOriginal ? 'rotate-180' : ''}`} />
-                  {/* Changed m.originalLang to m.originalLanguage */}
-                  {showOriginal ? 'Hide original' : `Show original (${LANGUAGE_LABELS[m.originalLanguage]})`}
+                  {showOriginal ? 'Hide original' : `Show original (${LANGUAGE_LABELS[m.originalLang]})`}
                 </button>
               </div>
             </div>

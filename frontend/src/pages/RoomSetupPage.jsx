@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Copy, Check, Users, MessageCircle } from 'lucide-react';
 import { createRoom, joinRoom } from '../api/client';
-import { DEV_CURRENT_USER_ID } from '../config/devConfig';
+//import { DEV_CURRENT_USER_ID } from '../config/wsConfig';
 
 // function generateRoomCode() {
 //   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0/O, 1/I)
@@ -15,13 +15,14 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
   const [createdCode, setCreatedCode] = useState(null);
   const [copied, setCopied] = useState(false);
   const [joinError, setJoinError] = useState('');
-  const [createRoom, setCreatedRoom] = useState(null);
+  const [createdRoom, setCreatedRoom] = useState(null);
 
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!roomName.trim()) return;
     try {
-      const room = await createRoom(DEV_CURRENT_USER_ID, roomName.trim(), true);
+      //const room = await createRoom(DEV_CURRENT_USER_ID, roomName.trim(), true);
+      const room = await createRoom(roomName.trim(), true);
       setCreatedCode(room.invite_code);
       setCreatedRoom(room);
     } catch (err) {
@@ -43,7 +44,9 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
       return;
     }
     try {
-      await joinRoom(DEV_CURRENT_USER_ID, code);
+      //await joinRoom(DEV_CURRENT_USER_ID, code);
+      //const room = await joinRoom(code);
+      await joinRoom(code);
       setJoinError('');
       onRoomReady();
     } catch (err) {

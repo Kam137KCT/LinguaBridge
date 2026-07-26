@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import Postmark from '../components/Postmark';
+import { login } from '../api/client';
 
-// A stack of translated "postcards" — the left panel's hero moment.
-// Shows the actual product behavior (a message crossing a language
-// boundary) rather than a generic illustration.
 function PostcardStack() {
   const cards = [
     { lang: 'NE', text: 'नमस्ते! भोलि भेटौं?', sub: 'Hello! Shall we meet tomorrow?', rotate: -3 },
     { lang: 'FR', text: 'Avec plaisir !', sub: 'With pleasure!', rotate: 2 },
-    { lang: 'ES', text: 'Nos vemos mañana', sub: "See you tomorrow", rotate: -1.5 },
+    { lang: 'ES', text: 'Nos vemos mañana', sub: 'See you tomorrow', rotate: -1.5 },
   ];
   return (
     <div className="relative w-full max-w-xs" style={{ height: 200 }}>
@@ -17,12 +15,7 @@ function PostcardStack() {
         <div
           key={c.lang}
           className="absolute inset-x-0 rounded-lg p-4 shadow-lg"
-          style={{
-            top: i * 26,
-            background: 'var(--color-fog)',
-            transform: `rotate(${c.rotate}deg)`,
-            zIndex: i,
-          }}
+          style={{ top: i * 26, background: 'var(--color-fog)', transform: `rotate(${c.rotate}deg)`, zIndex: i }}
         >
           <div className="flex items-start justify-between gap-3">
             <p className="font-display text-[15px] text-ink leading-snug">{c.text}</p>
@@ -41,20 +34,31 @@ function PostcardStack() {
 }
 
 export default function LoginPage({ onLogin, onGoRegister }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(onLogin, 900);
+    setError('');
+
+    try {
+      // login() already saves tokens under the correct keys internally
+      // and returns just the user object — no manual localStorage here.
+      const user = await login(username, password);
+      onLogin(user);
+    } catch (err) {
+      setError(err.message || 'Invalid username or password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex font-sans">
-      {/* Left panel */}
       <div
         className="hidden lg:flex flex-1 flex-col items-center justify-center px-16 relative"
         style={{ background: 'var(--color-ink)' }}
@@ -63,9 +67,7 @@ export default function LoginPage({ onLogin, onGoRegister }) {
           <Postmark />
           <span className="font-display text-2xl text-white tracking-tight">LinguaBridge</span>
         </div>
-
         <PostcardStack />
-
         <h2 className="font-display text-[26px] text-white text-center mt-14 mb-3 leading-tight">
           Every message, delivered<br />in their language
         </h2>
@@ -74,7 +76,6 @@ export default function LoginPage({ onLogin, onGoRegister }) {
         </p>
       </div>
 
-      {/* Right panel — form */}
       <div className="flex-1 flex items-center justify-center px-8" style={{ background: 'var(--color-fog)' }}>
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
@@ -83,19 +84,28 @@ export default function LoginPage({ onLogin, onGoRegister }) {
           </div>
 
           <h1 className="font-display text-[28px] text-ink mb-1">Welcome back</h1>
-          <p className="text-[14px] mb-8" style={{ color: 'var(--color-ink-soft)' }}>Sign in to keep the conversation going</p>
+          <p className="text-[14px] mb-8" style={{ color: 'var(--color-ink-soft)' }}>
+            Sign in to keep the conversation going
+          </p>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-lg text-[13px] bg-red-50 text-red-600 border border-red-200 flex items-center gap-2">
+              <AlertCircle size={15} />
+              <span>{error}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>
-                Email address
+                Username or email
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="username or you@example.com"
                 className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400 transition-all"
                 style={{ border: '1px solid #D5DAD8' }}
                 onFocus={(e) => (e.target.style.borderColor = 'var(--color-bridge)')}

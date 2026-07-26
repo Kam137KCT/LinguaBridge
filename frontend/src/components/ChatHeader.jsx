@@ -1,11 +1,10 @@
 import { Menu } from 'lucide-react';
-import { CURRENT_USER, LANGUAGE_LABELS } from '../data/mockData';
+import { LANGUAGE_LABELS } from '../data/mockData';
 import Avatar from './Avatar';
 
-export default function ChatHeader({ room, onMenuOpen }) {
+export default function ChatHeader({ room, currentUser, onMenuOpen }) {
   const membersList = room.members || [];
-  // const others = room.members.filter((m) => m.id !== CURRENT_USER.id);
-  const others = membersList.filter((m) => m.id !== CURRENT_USER.id);
+  const others = membersList.filter((m) => m.id !== currentUser.id);
 
   return (
     <div
@@ -26,17 +25,11 @@ export default function ChatHeader({ room, onMenuOpen }) {
         <h2 className="text-[14px] font-600 truncate" style={{ color: 'var(--color-ink)' }}>
           {room.name}
         </h2>
-        {/* <p className="text-[12px]" style={{ color: room.isOnline ? 'var(--color-bridge)' : 'var(--color-ink-soft)' }}>
-          {room.isGroup ? `${room.members.length} members` : room.isOnline ? 'Online' : 'Offline'}
-        </p> */}
         <p className="text-[12px]" style={{ color: room.isOnline ? 'var(--color-bridge)' : 'var(--color-ink-soft)' }}>
           {room.isGroup ? `${membersList.length} members` : room.isOnline ? 'Online' : 'Offline'}
-          </p>
+        </p>
       </div>
 
-      {/* Language badges — shows every language this message will need
-          to be translated into, since that's the thing users of this
-          product actually want to see at a glance. */}
       <div className="flex items-center -space-x-1">
         {[...new Set(others.map((m) => m.language))].map((lang) => (
           <span

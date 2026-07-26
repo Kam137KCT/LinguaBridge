@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Plus, Settings } from 'lucide-react';
-import { CURRENT_USER, LANGUAGE_LABELS } from '../data/mockData';
+import { LANGUAGE_LABELS } from '../data/mockData';
 import Avatar from './Avatar';
 import Postmark from './Postmark';
 
@@ -13,36 +13,28 @@ function formatTime(date) {
   return `${Math.floor(hours / 24)}d`;
 }
 
-// Preview text is translated into the current user's language, falling
-// back to the original if no translation exists for that pair — this
-// mirrors the real per-recipient translation behavior.
-function getPreview(room) {
-  // SAFEGUARD: If messages array doesn't exist, return empty preview immediately
+function getPreview(room, currentUserId, currentUserLang) {
   if (!room?.messages) return { text: '', unavailable: false };
-
   const last = room.messages[room.messages.length - 1];
   if (!last) return { text: '', unavailable: false };
-  if (last.senderId === CURRENT_USER.id) return { text: last.text, unavailable: false };
-  
-  // SAFEGUARD: Avoid crashing if translations object is completely missing
+  if (last.senderId === currentUserId) return { text: last.text, unavailable: false };
+
   const translations = last.translations || {};
-  const translated = translations[CURRENT_USER.language];
-  
+  const translated = translations[currentUserLang];
   if (translated === undefined) return { text: last.text, unavailable: false };
   if (translated === null) return { text: last.text, unavailable: true };
   return { text: translated, unavailable: false };
 }
 
-export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, onClose, onOpenProfile, onNewRoom }) {
+export default function Sidebar({ rooms, loading, activeId, currentUser, onSelect, isOpen, onClose, onOpenProfile, onNewRoom }) {
   const [search, setSearch] = useState('');
-
   const filtered = rooms.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()));
+  const userLang = currentUser?.preferred_language ?? 'en';
+  const displayName = currentUser?.username ?? 'User';
 
   return (
     <>
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/20 z-20 lg:hidden" onClick={onClose} />
-      )}
+      {isOpen && <div className="fixed inset-0 bg-black/20 z-20 lg:hidden" onClick={onClose} />}
 
       <aside
         className={`fixed lg:relative inset-y-0 left-0 z-30 w-72 flex flex-col transform transition-transform duration-200 ease-in-out
@@ -50,13 +42,7 @@ export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, on
         style={{ background: 'white', borderRight: '1px solid var(--color-fog-dim)' }}
       >
         <div className="px-5 pt-5 pb-4">
-            <div className="flex items-center gap-2.5 mb-5">
-            {/*<div
-              className="w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center"
-              style={{ borderColor: 'var(--color-bridge)', transform: 'rotate(-6deg)' }}
-            >
-              <span className="font-display text-[13px] font-600" style={{ color: 'var(--color-bridge)' }}>LB</span>
-            </div>*/}
+          <div className="flex items-center gap-2.5 mb-5">
             <Postmark size={32} />
             <span className="font-display text-[16px] font-600 text-ink">LinguaBridge</span>
             <button
@@ -68,22 +54,8 @@ export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, on
             </button>
           </div>
 
-          {/*<div className="relative mb-3">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search rooms..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-[13px] rounded-lg outline-none placeholder:text-gray-400 text-[color:var(--color-ink)]"
-              style={{ background: 'var(--color-fog)', border: '1px solid var(--color-fog-dim)' }}
-            />
-          </div>*/}
-
           <div className="relative mb-3">
-            {/* Search Icon */}
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            {/* Search Input */}
             <input
               type="text"
               placeholder="Search rooms..."
@@ -98,20 +70,19 @@ export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, on
             className="w-full flex items-center justify-center gap-1.5 py-2 text-[12.5px] font-600 rounded-lg"
             style={{ background: 'var(--color-bridge-dim)', color: 'var(--color-bridge)' }}
           >
-            {loading && (
-              <p className="text-[12.5px] text-center mt-6" style={{ color: 'var(--color-ink-soft)' }}>
-                Loading rooms...
-              </p>
-            )}
             <Plus size={14} /> New room
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 pb-4">
-          {filtered.map((room) => {
-            const preview = getPreview(room);
+          {loading && (
+            <p className="text-[12.5px] text-center mt-6" style={{ color: 'var(--color-ink-soft)' }}>
+              Loading rooms...
+            </p>
+          )}
 
-            // SAFEGUARD: Fallback to an empty array if messages is undefined
+          {!loading && filtered.map((room) => {
+            const preview = getPreview(room, currentUser?.id, userLang);
             const messages = room.messages || [];
             const last = messages[messages.length - 1];
             const isActive = room.id === activeId;
@@ -121,12 +92,9 @@ export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, on
                 key={room.id}
                 onClick={() => { onSelect(room.id); onClose(); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left mb-0.5 transition-all"
-                style={{
-                  background: isActive ? 'var(--color-bridge-dim)' : 'transparent',
-                }}
+                style={{ background: isActive ? 'var(--color-bridge-dim)' : 'transparent' }}
               >
                 <Avatar name={room.name} isGroup={room.isGroup} size={38} />
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
                     <span
@@ -152,7 +120,7 @@ export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, on
             );
           })}
 
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <p className="text-[12.5px] text-center mt-8" style={{ color: 'var(--color-ink-soft)' }}>
               No rooms match "{search}"
             </p>
@@ -161,15 +129,15 @@ export default function Sidebar({ rooms, loading, activeId, onSelect, isOpen, on
 
         <div className="px-4 py-3" style={{ borderTop: '1px solid var(--color-fog-dim)' }}>
           <button onClick={onOpenProfile} className="w-full flex items-center gap-3 p-2 rounded-lg text-left">
-            <Avatar name={CURRENT_USER.name} size={32} />
+            <Avatar name={displayName} size={32} />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-600 text-ink truncate">{CURRENT_USER.name}</p>
+              <p className="text-[13px] font-600 text-ink truncate">{displayName}</p>
             </div>
             <span
               className="font-mono text-[10px] font-600 px-1.5 py-0.5 rounded"
               style={{ background: 'var(--color-bridge-dim)', color: 'var(--color-bridge)' }}
             >
-              {LANGUAGE_LABELS[CURRENT_USER.language]}
+              {LANGUAGE_LABELS[userLang]}
             </span>
           </button>
         </div>

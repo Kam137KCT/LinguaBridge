@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import ChatHeader from './ChatHeader';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import { useChatSocket } from '../hooks/useChatSocket';
-import { DEV_CURRENT_USER_ID } from '../config/devConfig';
 
 function DateSeparator({ label }) {
   return (
@@ -29,49 +28,30 @@ function ConnectionBanner({ state }) {
   );
 }
 
-// function groupByDate(msgs) {
-//   const map = new Map();
-//   const now = new Date();
-//   for (const msg of msgs) {
-//     const diff = Math.floor((now - msg.timestamp) / 86400000);
-//     const label = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday'
-//       : msg.timestamp.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-//     if (!map.has(label)) map.set(label, []);
-//     map.get(label).push(msg);
-//   }
-//   return Array.from(map.entries()).map(([label, msgs]) => ({ label, msgs }));
-// }
-
 function groupByDate(msgs) {
   const map = new Map();
   const now = new Date();
   for (const msg of msgs) {
-    // Explicitly normalize string instances to valid Date objects
     const dateObj = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp);
-    
     const diff = Math.floor((now - dateObj) / 86400000);
     const label = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday'
       : dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-      
     if (!map.has(label)) map.set(label, []);
-    // Reassign the clean Date object so child elements inherit it safely
     map.get(label).push({ ...msg, timestamp: dateObj });
   }
   return Array.from(map.entries()).map(([label, msgs]) => ({ label, msgs }));
 }
 
-export default function ChatArea({ room, onMenuOpen, onToast }) {
-  // Real room id now, not the old hardcoded DEV_ROOM_ID.
-  const { messages, historyLoaded, connectionState, sendMessage } = useChatSocket(room.id, DEV_CURRENT_USER_ID);
+export default function ChatArea({ room, currentUser, onMenuOpen, onToast }) {
+  const { messages, historyLoaded, connectionState, sendMessage } = useChatSocket(room.id);
   const bottomRef = useRef(null);
   const prevCount = useRef(0);
-  //const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     if (messages.length > prevCount.current && prevCount.current > 0) {
       const last = messages[messages.length - 1];
-      if (last.senderId !== DEV_CURRENT_USER_ID) onToast(`New message from ${last.senderName}`);
+      if (last.senderId !== currentUser.id) onToast(`New message from ${last.senderName}`);
     }
     prevCount.current = messages.length;
   }, [messages]);
@@ -84,7 +64,7 @@ export default function ChatArea({ room, onMenuOpen, onToast }) {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0" style={{ background: 'var(--color-fog)' }}>
-      <ChatHeader room={room} onMenuOpen={onMenuOpen} />
+      <ChatHeader room={room} currentUser={currentUser} onMenuOpen={onMenuOpen} />
       <ConnectionBanner state={connectionState} />
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -107,6 +87,7 @@ export default function ChatArea({ room, onMenuOpen, onToast }) {
                   showAvatar={showAvatar}
                   showName={showAvatar}
                   isGroup={room.isGroup}
+                  currentUser={currentUser}
                 />
               );
             })}

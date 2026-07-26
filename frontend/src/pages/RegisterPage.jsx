@@ -1,23 +1,48 @@
 import { useState } from 'react';
-import { Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Check, AlertCircle } from 'lucide-react';
 import { LANGUAGE_NAMES } from '../data/mockData';
 import Postmark from '../components/Postmark';
+import { register, login } from '../api/client';
 
 const LANGUAGES = ['en', 'ne', 'fr', 'es'];
 
 export default function RegisterPage({ onRegister, onGoLogin }) {
   const [form, setForm] = useState({
-    fullName: '', email: '', password: '', confirmPassword: '', language: 'en',
+    fullName: '', username: '', email: '', password: '', confirmPassword: '', language: 'en',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords don't match.");
+      return;
+    }
     setLoading(true);
-    setTimeout(onRegister, 1000);
+    setError('');
+
+    const [firstName, ...rest] = form.fullName.trim().split(' ');
+    const lastName = rest.join(' ');
+
+    try {
+      await register({
+        username: form.username,
+        email: form.email,
+        password: form.password,
+        firstName,
+        lastName,
+        preferredLanguage: form.language,
+      });
+      const user = await login(form.username, form.password);
+      onRegister(user);
+    } catch (err) {
+      setError(err.message || 'Registration failed.');
+      setLoading(false);
+    }
   };
 
   const inputStyle = {
@@ -71,12 +96,29 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
           <h1 className="font-display text-[28px] text-ink mb-1">Create account</h1>
           <p className="text-[14px] mb-8" style={{ color: 'var(--color-ink-soft)' }}>Start chatting across languages</p>
 
+          {error && (
+            <div className="mb-4 p-3 rounded-lg text-[13px] bg-red-50 text-red-600 border border-red-200 flex items-center gap-2">
+              <AlertCircle size={15} />
+              <span>{error}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Full name</label>
               <input
                 type="text" required value={form.fullName} onChange={set('fullName')}
                 placeholder="Alex Chen"
+                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Username</label>
+              <input
+                type="text" required value={form.username} onChange={set('username')}
+                placeholder="alexchen"
                 className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
                 style={inputStyle}
               />
