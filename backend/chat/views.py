@@ -1,4 +1,3 @@
-# chat/views.py
 from django.shortcuts import get_object_or_404
 from rest_framework import status, permissions
 from rest_framework.pagination import PageNumberPagination
@@ -7,6 +6,8 @@ from rest_framework.views import APIView
 
 from .models import Room, RoomMembership, Message
 from .serializers import RoomSerializer, MessageSerializer
+from translation.models import Translation
+from translation.services import translate
 
 
 class MessageHistoryPagination(PageNumberPagination):
@@ -74,19 +75,56 @@ class MessageHistoryView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        messages = (
+        user_lang = request.user.preferred_language
+
+        base_queryset = (
             Message.objects.filter(room=room)
-            .select_related("sender", "room")
-            .prefetch_related("translations")
+            .select_related("sender")
             .order_by("-created_at")
         )
 
         paginator = self.pagination_class()
-        page = paginator.paginate_queryset(messages, request)
-        if page is not None:
-            page.reverse()
-            serializer = MessageSerializer(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
+        page = paginator.paginate_queryset(base_queryset, request)
+        if page is None:
+            return Response([])
 
-        serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data)
+        page_ids = [msg.id for msg in page]
+
+        # 1. Batch existence check to prevent N+1 queries
+        existing_translation_msg_ids = set(
+            Translation.objects.filter(
+                message_id__in=page_ids, 
+                target_language=user_lang
+            ).values_list("message_id", flat=True)
+        )
+
+        # 2. Build missing translations in memory
+        new_translations = []
+        for msg in page:
+            if msg.id not in existing_translation_msg_ids:
+                translated_text, confidence = translate(
+                    msg.text, msg.original_language, user_lang
+                )
+                new_translations.append(
+                    Translation(
+                        message=msg,
+                        target_language=user_lang,
+                        translated_text=translated_text,
+                        confidence=confidence,
+                    )
+                )
+
+        # 3. Bulk insert to reduce DB writes to 1 query
+        if new_translations:
+            Translation.objects.bulk_create(new_translations)
+
+        # 4. Re-fetch with prefetch so serializer sees up-to-date translations
+        fresh_messages = (
+            Message.objects.filter(id__in=page_ids)
+            .select_related("sender")
+            .prefetch_related("translations")
+            .order_by("-created_at")
+        )
+
+        serializer = MessageSerializer(fresh_messages, many=True)
+        return paginator.get_paginated_response(serializer.data)
