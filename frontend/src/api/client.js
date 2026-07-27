@@ -29,7 +29,10 @@ async function refreshAccessToken() {
   if (!response.ok) return null;
 
   const data = await response.json();
-  setTokens({ access: data.access });
+  // ROTATE_REFRESH_TOKENS is on server-side, so a new refresh token
+  // comes back with every refresh — must be saved, or the next
+  // refresh attempt uses an already-blacklisted token and fails.
+  setTokens({ access: data.access, refresh: data.refresh });
   return data.access;
 }
 

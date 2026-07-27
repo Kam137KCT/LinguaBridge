@@ -12,11 +12,11 @@ export const LANGUAGE_NAMES = {
   es: 'Spanish',
 };
 
-export const CURRENT_USER = {
-  id: 'me',
-  name: 'Alex Chen',
-  language: 'en',
-};
+// export const CURRENT_USER = {
+//   id: 'me',
+//   name: 'Alex Chen',
+//   language: 'en',
+// };
 
 export const ROOMS = [
   // TEMPORARY — id/name matched to the real backend Room for Milestone 5

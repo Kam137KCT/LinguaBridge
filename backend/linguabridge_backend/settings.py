@@ -7,11 +7,12 @@ from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 
-REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-
+# Load environment variables
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
 # SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
 # SECRET_KEY = os.getenv("SECRET_KEY")
@@ -20,9 +21,6 @@ load_dotenv(BASE_DIR / ".env")
     # raise ValueError("The SECRET_KEY environment variable must be set in production!")
 # Fallback only if DEBUG is True
 # SECRET_KEY = SECRET_KEY or "dev-only-insecure-key"
-
-# Load environment variables
-load_dotenv(BASE_DIR / ".env")
 
 # Configuration
 DEBUG = os.getenv("DEBUG", "True") == "True"
