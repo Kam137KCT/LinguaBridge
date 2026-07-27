@@ -11,9 +11,11 @@ staticfiles/
 media/
 backend/linguabridge_backend/test_ws.py
 backend/linguabridge_backend/test_redis_async.py
-# .gitignore
-backend/training/data/
 test_channel_layer.py
+backend/training/models/
+backend/training/data/
+backend/venv/
+__pycache__/
 
 # ---------- Secrets / environment ----------
 .env
