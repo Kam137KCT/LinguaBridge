@@ -15,14 +15,11 @@ MODEL_MAP = {
     ("fr", "en"): "Helsinki-NLP/opus-mt-fr-en",
     ("en", "es"): "Helsinki-NLP/opus-mt-en-es",
     ("es", "en"): "Helsinki-NLP/opus-mt-es-en",
-
-    # Community-trained checkpoint, not an official Helsinki-NLP model.
-    # Standing in for ne->en only until Milestone 9's own fine-tuned
-    # model is ready. Verify actual output quality before relying on
-    # this for anything beyond development testing.
     ("ne", "en"): "iamTangsang/MarianMT-Nepali-to-English",
 
-    # ("en", "ne") deliberately absent — see module docstring.
+    # Milestone 9 — our own fine-tuned model, replacing the earlier
+    # gap where en-ne had no working model at all.
+    ("en", "ne"): "./training/en-ne-finetuned",
 }
 
 # Target-language token required for any multi-target model in
