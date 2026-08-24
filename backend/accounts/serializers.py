@@ -41,6 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "first_name", "last_name", "preferred_language"]
+        read_only_fields = ["id", "username", "email"]  # Protect core identity fields
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
