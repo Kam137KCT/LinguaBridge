@@ -1,4 +1,5 @@
 import json
+import asyncio
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -14,7 +15,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_group_name = f"chat_{self.room_id}"
         self.user = self.scope.get("user")
 
-        # Reject if user is unauthenticated or anonymous
         if not self.user or getattr(self.user, "is_anonymous", False):
             await self.close()
             return
@@ -32,14 +32,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
+        # Also includes the fix for Issue #4 (Unhandled Exception on Invalid JSON)
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            return
+
         text = data.get("text", "").strip()
         if not text:
             return
 
-        message_payload = await self._save_message_and_translate(self.room_id, self.user, text)
+        # 1. Save the initial message and determine required languages (Fast DB operation)
+        msg_id, target_languages = await self._save_message_and_get_targets(
+            self.room_id, self.user, text
+        )
 
-        # Broadcast payload containing all recipient translations
+        # 2. Run heavy PyTorch translations concurrently in background threads
+        tasks = [
+            asyncio.to_thread(translate, text, self.user.preferred_language, lang)
+            for lang in target_languages
+        ]
+        
+        # Wait for all languages to finish translating simultaneously
+        results = await asyncio.gather(*tasks) if tasks else []
+        translation_results = dict(zip(target_languages, results))
+
+        # 3. Save translations and get the final broadcast payload (Fast DB operation)
+        message_payload = await self._save_translations_and_build_payload(
+            self.room_id, self.user, text, msg_id, translation_results
+        )
+
         await self.channel_layer.group_send(
             self.room_group_name, {"type": "chat.message", "message": message_payload},
         )
@@ -54,7 +76,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return RoomMembership.objects.filter(room_id=room_id, user_id=user_id).exists()
 
     @database_sync_to_async
-    def _save_message_and_translate(self, room_id, sender, text):
+    def _save_message_and_get_targets(self, room_id, sender, text):
         room = Room.objects.get(id=room_id)
 
         msg = Message.objects.create(
@@ -69,20 +91,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
             .exclude(user=sender)
             .select_related("user")
         )
-        target_languages = {m.user.preferred_language for m in other_members if m.user.preferred_language}
+        
+        # Convert set to a list so order is preserved for dict(zip(...)) later
+        target_languages = list({m.user.preferred_language for m in other_members if m.user.preferred_language})
+        
+        return msg.id, target_languages
+
+    @database_sync_to_async
+    def _save_translations_and_build_payload(self, room_id, sender, text, msg_id, translation_results):
+        msg = Message.objects.get(id=msg_id)
+        room = Room.objects.get(id=room_id)
 
         translations = {}
         confidence = {}
-        for lang in target_languages:
-            translated_text, conf = translate(text, sender.preferred_language, lang)
-            Translation.objects.create(
-                message=msg,
-                target_language=lang,
-                translated_text=translated_text,
-                confidence=conf,
+        db_translations = []
+
+        for lang, (translated_text, conf) in translation_results.items():
+            db_translations.append(
+                Translation(
+                    message=msg,
+                    target_language=lang,
+                    translated_text=translated_text,
+                    confidence=conf,
+                )
             )
             translations[lang] = translated_text
             confidence[lang] = conf
+
+        # Use bulk_create for performance
+        if db_translations:
+            Translation.objects.bulk_create(db_translations, ignore_conflicts=True)
 
         return {
             "id": msg.id,
