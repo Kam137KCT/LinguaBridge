@@ -93,7 +93,7 @@ class MessageHistoryView(APIView):
 
         page_ids = [msg.id for msg in page]
 
-        # 1. Batch existence check to prevent N+1 queries
+        # 1. Check existing translations
         existing_translation_msg_ids = set(
             Translation.objects.filter(
                 message_id__in=page_ids, 
@@ -101,27 +101,32 @@ class MessageHistoryView(APIView):
             ).values_list("message_id", flat=True)
         )
 
-        # 2. Build missing translations in memory
-        new_translations = []
-        for msg in page:
-            if msg.id not in existing_translation_msg_ids:
-                translated_text, confidence = translate(
-                    msg.text, msg.original_language, user_lang
-                )
-                new_translations.append(
-                    Translation(
-                        message=msg,
-                        target_language=user_lang,
-                        translated_text=translated_text,
-                        confidence=confidence,
-                    )
-                )
+        # 2. Identify messages needing translation
+        msgs_to_translate = [
+            msg for msg in page 
+            if msg.id not in existing_translation_msg_ids and msg.original_language != user_lang
+        ]
 
-        # 3. Bulk insert to reduce DB writes to 1 query
-        if new_translations:
+        # 3. Translate missing messages in parallel using worker threads
+        def _translate_worker(msg):
+            translated_text, confidence = translate(
+                msg.text, msg.original_language, user_lang
+            )
+            return Translation(
+                message=msg,
+                target_language=user_lang,
+                translated_text=translated_text,
+                confidence=confidence,
+            )
+
+        if msgs_to_translate:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                new_translations = list(executor.map(_translate_worker, msgs_to_translate))
+            
+            # 4. Bulk insert translations
             Translation.objects.bulk_create(new_translations, ignore_conflicts=True)
 
-        # 4. Re-fetch with prefetch so serializer sees up-to-date translations
+        # 5. Re-fetch with prefetch
         fresh_messages = (
             Message.objects.filter(id__in=page_ids)
             .select_related("sender")
