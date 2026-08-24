@@ -11,7 +11,7 @@ export default function Postmark({ size = 44 }) {
       }}
     >
       <span
-        className="font-display font-600 leading-none"
+        className="font-['display'] leading-none font-semibold"
         style={{ fontSize: size * 0.36, color: 'var(--color-bridge)' }}
       >
         LB
