@@ -48,4 +48,4 @@ pnpm-debug.log*
 # ---------- Model files (Milestone 4 onward — these get large) ----------
 *.bin
 *.safetensors
-/models/
+backend/training/train_log.txt

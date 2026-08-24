@@ -116,7 +116,7 @@ class MessageHistoryView(APIView):
 
         # 3. Bulk insert to reduce DB writes to 1 query
         if new_translations:
-            Translation.objects.bulk_create(new_translations)
+            Translation.objects.bulk_create(new_translations, ignore_conflicts=True)
 
         # 4. Re-fetch with prefetch so serializer sees up-to-date translations
         fresh_messages = (
