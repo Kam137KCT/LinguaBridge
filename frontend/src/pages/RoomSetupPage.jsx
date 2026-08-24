@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Copy, Check, Users, MessageCircle } from 'lucide-react';
 import { createRoom, joinRoom } from '../api/client';
-//import { DEV_CURRENT_USER_ID } from '../config/wsConfig';
-
-// function generateRoomCode() {
-//   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0/O, 1/I)
-//   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-// }
 
 export default function RoomSetupPage({ onBack, onRoomReady }) {
   const [mode, setMode] = useState('create'); // 'create' | 'join'
@@ -60,33 +54,33 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--color-fog)' }}>
+    <div className="flex min-h-screen items-center justify-center px-6" style={{ background: 'var(--color-fog)' }}>
       <div className="w-full max-w-md">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-[13px] font-500 mb-6"
+          className="mb-6 flex items-center gap-1.5 text-[13px] font-medium"
           style={{ color: 'var(--color-ink-soft)' }}
         >
           <ArrowLeft size={15} /> Back
         </button>
 
-        <h1 className="font-display text-[26px] text-ink mb-1">Start a room</h1>
-        <p className="text-[14px] mb-6" style={{ color: 'var(--color-ink-soft)' }}>
+        <h1 className="mb-1 font-display text-[26px] text-ink">Start a room</h1>
+        <p className="mb-6 text-[14px]" style={{ color: 'var(--color-ink-soft)' }}>
           Create a new room to invite others, or join one with a code.
         </p>
 
         {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-lg mb-6" style={{ background: 'var(--color-fog-dim)' }}>
+        <div className="flex gap-1 rounded-lg p-1 mb-6" style={{ background: 'var(--color-fog-dim)' }}>
           <button
             onClick={() => { setMode('create'); setCreatedCode(null); }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[13px] font-600 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[13px] font-semibold transition-all"
             style={tabStyle(mode === 'create')}
           >
             <Users size={14} /> Create room
           </button>
           <button
             onClick={() => { setMode('join'); setJoinError(''); }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[13px] font-600 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[13px] font-semibold transition-all"
             style={tabStyle(mode === 'join')}
           >
             <MessageCircle size={14} /> Join room
@@ -107,7 +101,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
               </div>
               <button
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-600 mb-5"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold mb-5"
                 style={{ background: 'var(--color-bridge-dim)', color: 'var(--color-bridge)' }}
               >
                 {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -115,7 +109,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
               </button>
               <button
                 onClick={() => onRoomReady()}
-                className="w-full py-2.5 text-white text-[14px] font-600 rounded-lg"
+                className="w-full py-2.5 text-white text-[14px] font-semibold rounded-lg"
                 style={{ background: 'var(--color-ink)' }}
               >
                 Go to room
@@ -124,7 +118,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
           ) : (
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>
+                <label className="text-[12px] font-semibold block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>
                   Room name
                 </label>
                 <input
@@ -137,7 +131,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
               </div>
               <button
                 type="submit"
-                className="w-full py-2.5 text-white text-[14px] font-600 rounded-lg"
+                className="w-full py-2.5 text-white text-[14px] font-semibold rounded-lg"
                 style={{ background: 'var(--color-bridge)' }}
               >
                 Create room
@@ -149,7 +143,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
         {mode === 'join' && (
           <form onSubmit={handleJoin} className="space-y-4">
             <div>
-              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>
+              <label className="text-[12px] font-semibold block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>
                 Room code
               </label>
               <input
@@ -166,7 +160,7 @@ export default function RoomSetupPage({ onBack, onRoomReady }) {
             </div>
             <button
               type="submit"
-              className="w-full py-2.5 text-white text-[14px] font-600 rounded-lg"
+              className="w-full py-2.5 text-white text-[14px] font-semibold rounded-lg"
               style={{ background: 'var(--color-bridge)' }}
             >
               Join room
