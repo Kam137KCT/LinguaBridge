@@ -10,10 +10,14 @@ from .model_registry import (
     MODEL_MAP, TARGET_TOKEN, MODEL_ARCHITECTURE, NLLB_LANG_CODES,
     GENERATION_CONFIG, resolve_pivot,
 )
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+redis_password = getattr(settings, "REDIS_PASSWORD", None)
 
 _redis_client = redis.Redis(
     host=getattr(settings, "REDIS_HOST", "127.0.0.1"),
     port=int(getattr(settings, "REDIS_PORT", 6379)),
+    password=redis_password if redis_password else None,  # <-- Pass password here
     decode_responses=True,
 )
 
@@ -31,7 +35,9 @@ def _get_model_and_tokenizer(model_name):
         else:
             tokenizer = MarianTokenizer.from_pretrained(model_name)
             model = MarianMTModel.from_pretrained(model_name)
+
         model.eval()
+        model.to(DEVICE)  # <-- Move model weights to GPU/CPU
         
         _loaded[model_name] = (model, tokenizer)
         _tokenizer_locks[model_name] = threading.Lock() 
@@ -82,6 +88,7 @@ def _run_model(text, model_name, source_lang=None, target_lang=None, target_toke
         input_text = f"{target_token} {text}" if target_token else text
         inputs = tokenizer([input_text], return_tensors="pt", padding=True, truncation=True)
 
+    inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
     # The lock is now released. Concurrent generation is thread-safe.
     with torch.no_grad():
         output = model.generate(**inputs, **generate_kwargs)
@@ -116,6 +123,9 @@ def _run_model(text, model_name, source_lang=None, target_lang=None, target_toke
 
 
 def translate(text, source_lang, target_lang):
+    if not text or not text.strip():
+        return text, "high"
+
     if source_lang == target_lang:
         return text, "high"
 
