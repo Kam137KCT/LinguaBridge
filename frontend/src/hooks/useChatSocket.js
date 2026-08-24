@@ -17,7 +17,7 @@ function normalizeMessage(payload) {
 
 export function useChatSocket(roomId) {
   const [messages, setMessages] = useState([]);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyLoadedRoomId, setHistoryLoadedRoomId] = useState(null);
   const [connectionState, setConnectionState] = useState('connecting');
   const socketRef = useRef(null);
   const messageMapRef = useRef(new Map());
@@ -29,7 +29,6 @@ export function useChatSocket(roomId) {
 
   useEffect(() => {
     if (!roomId) return;
-    setHistoryLoaded(false);
     messageMapRef.current = new Map();
 
     getMessageHistory(roomId)
@@ -39,9 +38,9 @@ export function useChatSocket(roomId) {
           messageMapRef.current.set(msg.id, msg);
         }
         rebuildMessagesArray();
-        setHistoryLoaded(true);
+        setHistoryLoadedRoomId(roomId);
       })
-      .catch(() => setHistoryLoaded(true));
+      .catch(() => setHistoryLoadedRoomId(roomId));
   }, [roomId, rebuildMessagesArray]);
 
   useEffect(() => {
@@ -51,7 +50,6 @@ export function useChatSocket(roomId) {
     const url = `${WS_BASE_URL}/ws/chat/${roomId}/?token=${token}`;
     const socket = new WebSocket(url);
     socketRef.current = socket;
-    setConnectionState('connecting');
 
     socket.onopen = () => setConnectionState('open');
     socket.onmessage = (event) => {
@@ -72,5 +70,10 @@ export function useChatSocket(roomId) {
     }
   }, []);
 
-  return { messages, historyLoaded, connectionState, sendMessage };
+  return {
+    messages,
+    historyLoaded: historyLoadedRoomId === roomId,
+    connectionState,
+    sendMessage,
+  };
 }
