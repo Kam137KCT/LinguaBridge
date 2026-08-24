@@ -43,7 +43,10 @@ class RoomJoinView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        invite_code = request.data.get("invite_code", "").strip().upper()
+        # Safely check for either snake_case or camelCase
+        raw_code = request.data.get("invite_code") or request.data.get("inviteCode", "")
+        invite_code = raw_code.strip().upper()
+        
         if not invite_code:
             return Response(
                 {"detail": "Invite code is required."}, 
