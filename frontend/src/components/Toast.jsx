@@ -12,7 +12,7 @@ function Toast({ message, onDismiss }) {
       setTimeout(onDismiss, 250);
     }, 3000);
     return () => clearTimeout(t);
-  }, [onDismiss]);
+  }, []);
 
   return (
     <div
