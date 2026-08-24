@@ -14,8 +14,7 @@ export default function Avatar({ name, size = 36, isGroup = false }) {
 
   return (
     <div
-      //className="rounded-full flex items-center justify-center flex-shrink-0 font-display font-600"
-      className="rounded-full flex items-center justify-center shrink-0 font-display font-600"
+      className="flex shrink-0 items-center justify-center rounded-full font-['display'] font-semibold"
       style={{ width: size, height: size, background: color, color: 'white', fontSize: size * 0.4 }}
     >
       {initials}
