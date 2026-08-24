@@ -1,6 +1,6 @@
 import hashlib
 import json
-
+import threading
 import redis
 import torch
 from django.conf import settings
@@ -19,6 +19,7 @@ _redis_client = redis.Redis(
 
 CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 _loaded = {}
+_tokenizer_locks = {}
 
 
 def _get_model_and_tokenizer(model_name):
@@ -31,7 +32,10 @@ def _get_model_and_tokenizer(model_name):
             tokenizer = MarianTokenizer.from_pretrained(model_name)
             model = MarianMTModel.from_pretrained(model_name)
         model.eval()
+        
         _loaded[model_name] = (model, tokenizer)
+        _tokenizer_locks[model_name] = threading.Lock() 
+        
     return _loaded[model_name]
 
 
@@ -65,22 +69,26 @@ def _run_model(text, model_name, source_lang=None, target_lang=None, target_toke
         generate_kwargs["no_repeat_ngram_size"] = gen_config["no_repeat_ngram_size"]
 
     if architecture == "nllb":
-        # NLLB selects target language via forced_bos_token_id, not a
-        # text prefix — completely different mechanism from Marian's
-        # >>lang<< token trick.
-        tokenizer.src_lang = NLLB_LANG_CODES[source_lang]
         target_code = NLLB_LANG_CODES[target_lang]
         generate_kwargs["forced_bos_token_id"] = tokenizer.convert_tokens_to_ids(target_code)
-        input_text = text
+        
+        # 4. Use the lock to protect the shared tokenizer state safely
+        lock = _tokenizer_locks[model_name]
+        with lock:
+            tokenizer.src_lang = NLLB_LANG_CODES[source_lang]
+            inputs = tokenizer([text], return_tensors="pt", padding=True, truncation=True)
+            
     else:
         input_text = f"{target_token} {text}" if target_token else text
+        inputs = tokenizer([input_text], return_tensors="pt", padding=True, truncation=True)
 
-    inputs = tokenizer([input_text], return_tensors="pt", padding=True, truncation=True)
-
+    # The lock is now released. Concurrent generation is thread-safe.
     with torch.no_grad():
         output = model.generate(**inputs, **generate_kwargs)
 
     translated_text = tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+
+    # ... (the rest of your scoring logic remains exactly the same)
 
     # Beam search: HuggingFace already computes a length-normalized
     # sequence score (sum of log-probs / length**length_penalty, with
