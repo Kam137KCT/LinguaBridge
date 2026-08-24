@@ -12,7 +12,8 @@ import { ToastContainer } from './components/Toast';
 let toastCounter = 0;
 
 export default function App() {
-  const [page, setPage] = useState('loading');
+  // Derive initial page lazily to prevent synchronous setState inside useEffect on mount
+  const [page, setPage] = useState(() => (getAccessToken() ? 'loading' : 'login'));
   const [currentUser, setCurrentUser] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
@@ -29,23 +30,6 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Restore session on load if a valid access token exists
-  useEffect(() => {
-    if (!getAccessToken()) {
-      setPage('login');
-      return;
-    }
-    getMe()
-      .then((user) => {
-        setCurrentUser(user);
-        setPage('chat');
-      })
-      .catch(() => {
-        clearTokens();
-        setPage('login');
-      });
-  }, []);
-
   const refreshRooms = useCallback(async () => {
     setRoomsLoading(true);
     try {
@@ -56,10 +40,9 @@ export default function App() {
         inviteCode: r.inviteCode ?? r.invite_code,
         isOnline: true,
       }));
-      
+
       setRooms(normalizedRooms);
 
-      // Reset activeId if the selected room no longer exists
       setActiveId((currentId) => {
         if (currentId && !normalizedRooms.some((r) => r.id === currentId)) {
           return null;
@@ -73,19 +56,33 @@ export default function App() {
     }
   }, [addToast]);
 
+  // Restore session on load if an access token exists
   useEffect(() => {
-    if (page === 'chat') refreshRooms();
-  }, [page, refreshRooms]);
+    if (!getAccessToken()) return;
+
+    getMe()
+      .then((user) => {
+        setCurrentUser(user);
+        setPage('chat');
+        refreshRooms();
+      })
+      .catch(() => {
+        clearTokens();
+        setPage('login');
+      });
+  }, [refreshRooms]);
 
   const handleLogin = (user) => {
     setCurrentUser(user);
     setPage('chat');
+    refreshRooms();
     setTimeout(() => addToast(`Welcome back, ${user.username}`), 300);
   };
 
   const handleRegister = (user) => {
     setCurrentUser(user);
     setPage('chat');
+    refreshRooms();
     setTimeout(() => addToast(`Account created — welcome, ${user.username}`), 300);
   };
 
@@ -103,8 +100,9 @@ export default function App() {
 
   const handleRoomReady = async (newRoom) => {
     await refreshRooms();
-    if (newRoom?.id) {
-      setActiveId(newRoom.id);
+    const targetId = typeof newRoom === 'object' ? newRoom?.id : newRoom;
+    if (targetId) {
+      setActiveId(targetId);
     }
     setPage('chat');
   };
@@ -114,13 +112,19 @@ export default function App() {
       return <div className="min-h-screen" style={{ background: 'var(--color-fog)' }} />;
     }
     if (page === 'login') {
-      return <LoginPage onLogin={handleLogin} onGoRegister={() => setPage('register')} />;
+      return <LoginPage onLogin={handleLogin} onGoRegister={() => setPage('register')} onToast={addToast} />;
     }
     if (page === 'register') {
-      return <RegisterPage onRegister={handleRegister} onGoLogin={() => setPage('login')} />;
+      return <RegisterPage onRegister={handleRegister} onGoLogin={() => setPage('login')} onToast={addToast} />;
     }
     if (page === 'roomSetup') {
-      return <RoomSetupPage onBack={() => setPage('chat')} onRoomReady={handleRoomReady} />;
+      return (
+        <RoomSetupPage
+          onBack={() => setPage('chat')}
+          onRoomReady={handleRoomReady}
+          onToast={addToast}
+        />
+      );
     }
     if (page === 'profile') {
       return (
@@ -129,6 +133,7 @@ export default function App() {
           onBack={() => setPage('chat')}
           onLogout={handleLogout}
           onUserUpdate={setCurrentUser}
+          onToast={addToast}
         />
       );
     }
@@ -149,7 +154,7 @@ export default function App() {
           onNewRoom={() => setPage('roomSetup')}
         />
 
-        <main className="flex flex-1 flex-col min-h-0 min-w-0">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           {activeRoom ? (
             <ChatArea
               key={`${activeRoom.id}-${currentUser?.preferred_language || 'en'}`}
@@ -159,19 +164,19 @@ export default function App() {
               onToast={addToast}
             />
           ) : (
-            <div className="flex-1 flex flex-col">
+            <div className="flex flex-1 flex-col">
               <div
-                className="lg:hidden flex items-center gap-3 px-4 py-3"
+                className="flex items-center gap-3 px-4 py-3 lg:hidden"
                 style={{ background: 'white', borderBottom: '1px solid var(--color-fog-dim)' }}
               >
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg"
+                  className="flex size-8 items-center justify-center rounded-lg"
                   style={{ background: 'var(--color-fog)', color: 'var(--color-ink-soft)' }}
                 >
                   ☰
                 </button>
-                <span className="font-display text-[15px] font-semibold" style={{ color: 'var(--color-ink)' }}>
+                <span className="font-['display'] text-[15px] font-semibold" style={{ color: 'var(--color-ink)' }}>
                   LinguaBridge
                 </span>
               </div>
