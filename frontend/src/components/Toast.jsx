@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { X, Check } from 'lucide-react';
 
 function Toast({ message, onDismiss }) {
@@ -12,7 +11,8 @@ function Toast({ message, onDismiss }) {
       setTimeout(onDismiss, 250);
     }, 3000);
     return () => clearTimeout(t);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run timer once on mount
 
   return (
     <div
@@ -26,7 +26,10 @@ function Toast({ message, onDismiss }) {
       </span>
       <p className="text-[12.5px] font-500 text-white flex-1">{message}</p>
       <button
-        onClick={() => { setVisible(false); setTimeout(onDismiss, 250); }}
+        onClick={() => {
+          setVisible(false);
+          setTimeout(onDismiss, 250);
+        }}
         className="text-gray-400 hover:text-white ml-1"
       >
         <X size={12} />
@@ -36,18 +39,17 @@ function Toast({ message, onDismiss }) {
 }
 
 export function ToastContainer({ toasts, onDismiss }) {
-  const handleDismiss = useCallback((id) => {
-    onDismiss(id);
-  }, [onDismiss]);
+  const handleDismiss = useCallback(
+    (id) => {
+      onDismiss(id);
+    },
+    [onDismiss]
+  );
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
       {toasts.map((t) => (
-        <Toast
-          key={t.id}
-          message={t.message}
-          onDismiss={() => handleDismiss(t.id)}
-        />
+        <Toast key={t.id} message={t.message} onDismiss={() => handleDismiss(t.id)} />
       ))}
     </div>
   );
