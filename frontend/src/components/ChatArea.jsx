@@ -39,7 +39,7 @@ function groupByDate(msgs) {
     if (!map.has(label)) map.set(label, []);
     map.get(label).push({ ...msg, timestamp: dateObj });
   }
-  return Array.from(map.entries()).map(([label, msgs]) => ({ label, msgs }));
+  /*return Array.from(map.entries()).map(([label, msgs]) => ({ label, msgs }));*/
 }
 
 export default function ChatArea({ room, currentUser, onMenuOpen, onToast }) {
