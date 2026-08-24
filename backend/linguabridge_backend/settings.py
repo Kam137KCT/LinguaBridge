@@ -13,6 +13,7 @@ load_dotenv(BASE_DIR / ".env")
 
 REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 
 # SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
 # SECRET_KEY = os.getenv("SECRET_KEY")
@@ -102,7 +103,11 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "hosts": [
+                f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
+                if REDIS_PASSWORD
+                else (REDIS_HOST, REDIS_PORT)
+            ],
         },
     },
 }
@@ -158,4 +163,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Frontend dev server origin — needed once CORS is added in Milestone 6.
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
