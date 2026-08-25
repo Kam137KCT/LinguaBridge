@@ -30,7 +30,11 @@ export function useChatSocket(roomId) {
   useEffect(() => {
     if (!roomId) return;
     messageMapRef.current = new Map();
-    setHistoryLoadedRoomId(null);
+
+    // Use queueMicrotask to defer state update out of the immediate synchronous effect execution tick
+    queueMicrotask(() => {
+      setHistoryLoadedRoomId(null);
+    });
 
     getMessageHistory(roomId)
       .then((data) => {
