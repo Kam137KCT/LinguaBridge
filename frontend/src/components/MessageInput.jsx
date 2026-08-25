@@ -41,6 +41,7 @@ export default function MessageInput({ onSend }) {
             {EMOJIS.map((e) => (
               <button
                 key={e}
+                type="button"
                 onClick={() => { setText((t) => t + e); setShowEmoji(false); }}
                 className="text-xl transition-transform hover:scale-125"
               >
@@ -53,6 +54,7 @@ export default function MessageInput({ onSend }) {
 
       <div className="flex items-end gap-2">
         <button
+          type="button"
           onClick={() => setShowEmoji((v) => !v)}
           className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg"
           style={{ color: showEmoji ? 'var(--color-bridge)' : 'var(--color-ink-soft)', background: showEmoji ? 'var(--color-bridge-dim)' : 'transparent' }}
@@ -77,6 +79,7 @@ export default function MessageInput({ onSend }) {
         </div>
 
         <button
+          type="button"
           onClick={handleSend}
           disabled={!text.trim()}
           className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg transition-all"
