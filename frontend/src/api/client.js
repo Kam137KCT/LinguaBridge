@@ -3,6 +3,20 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000
 const ACCESS_KEY = 'lb_access_token';
 const REFRESH_KEY = 'lb_refresh_token';
 
+let isRefreshing = false;
+let failedQueue = [];
+
+function processQueue(error, token = null) {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+}
+
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_KEY);
 }
@@ -21,19 +35,20 @@ async function refreshAccessToken() {
   const refresh = localStorage.getItem(REFRESH_KEY);
   if (!refresh) return null;
 
-  const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh }),
-  });
-  if (!response.ok) return null;
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!response.ok) return null;
 
-  const data = await response.json();
-  // ROTATE_REFRESH_TOKENS is on server-side, so a new refresh token
-  // comes back with every refresh — must be saved, or the next
-  // refresh attempt uses an already-blacklisted token and fails.
-  setTokens({ access: data.access, refresh: data.refresh });
-  return data.access;
+    const data = await response.json();
+    setTokens({ access: data.access, refresh: data.refresh });
+    return data.access;
+  } catch {
+    return null;
+  }
 }
 
 async function request(path, options = {}, retried = false) {
@@ -44,8 +59,37 @@ async function request(path, options = {}, retried = false) {
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
 
   if (response.status === 401 && !retried) {
-    const newToken = await refreshAccessToken();
-    if (newToken) return request(path, options, true);
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then(token => {
+        headers['Authorization'] = `Bearer ${token}`;
+        return fetch(`${API_BASE_URL}${path}`, { ...options, headers }).then(res => {
+          if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+          return res.status === 204 ? null : res.json();
+        });
+      }).catch(err => {
+        throw err;
+      });
+    }
+
+    isRefreshing = true;
+    try {
+      const newToken = await refreshAccessToken();
+      isRefreshing = false;
+      if (newToken) {
+        processQueue(null, newToken);
+        return request(path, options, true);
+      } else {
+        processQueue(new Error('Session expired'));
+        clearTokens();
+        throw new Error('Session expired. Please log in again.');
+      }
+    } catch (err) {
+      isRefreshing = false;
+      processQueue(err);
+      throw err;
+    }
   }
 
   if (!response.ok) {
@@ -87,7 +131,7 @@ export function updateMe(preferredLanguage) {
   });
 }
 
-// --- Rooms (identity comes from the JWT automatically — no user_id needed) ---
+// --- Rooms ---
 export function listRooms() {
   return request('/rooms/');
 }
