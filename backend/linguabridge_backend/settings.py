@@ -89,19 +89,24 @@ else:
     }
 
 # --- Redis: Railway's REDIS_URL in production, discrete vars locally ---
+REDIS_PASSWORD = None
 if os.getenv("REDIS_URL"):
-    _redis_parsed = urlparse(os.getenv("REDIS_URL"))
+    REDIS_URL = os.getenv("REDIS_URL")
+    # Optional: parse hostname/port if other services need discrete variables
+    _redis_parsed = urlparse(REDIS_URL)
     REDIS_HOST = _redis_parsed.hostname
     REDIS_PORT = _redis_parsed.port
 else:
     REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
     REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
+    REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}" if REDIS_PASSWORD else f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "hosts": [REDIS_URL],
         },
     },
 }
