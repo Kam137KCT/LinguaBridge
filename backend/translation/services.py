@@ -24,24 +24,27 @@ _redis_client = redis.Redis(
 CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 _loaded = {}
 _tokenizer_locks = {}
-
+_load_lock = threading.Lock()
 
 def _get_model_and_tokenizer(model_name):
     if model_name not in _loaded:
-        architecture = MODEL_ARCHITECTURE.get(model_name, "marian")
-        if architecture in ("mt5", "nllb"):
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        else:
-            tokenizer = MarianTokenizer.from_pretrained(model_name)
-            model = MarianMTModel.from_pretrained(model_name)
+        with _load_lock:
+            # Double-check inside the lock
+            if model_name not in _loaded:
+                architecture = MODEL_ARCHITECTURE.get(model_name, "marian")
+                if architecture in ("mt5", "nllb"):
+                    tokenizer = AutoTokenizer.from_pretrained(model_name)
+                    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+                else:
+                    tokenizer = MarianTokenizer.from_pretrained(model_name)
+                    model = MarianMTModel.from_pretrained(model_name)
 
-        model.eval()
-        model.to(DEVICE)  # <-- Move model weights to GPU/CPU
-        
-        _loaded[model_name] = (model, tokenizer)
-        _tokenizer_locks[model_name] = threading.Lock() 
-        
+                model.eval()
+                model.to(DEVICE)
+                
+                _loaded[model_name] = (model, tokenizer)
+                _tokenizer_locks[model_name] = threading.Lock() 
+                
     return _loaded[model_name]
 
 
