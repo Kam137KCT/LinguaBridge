@@ -17,14 +17,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if not self.user or getattr(self.user, "is_anonymous", False):
             print("WS Reject: Invalid or missing User token")
-            await self.accept()
             await self.close(code=4003)
             return
 
         valid = await self._connection_is_valid(self.room_id, self.user.id)
         if not valid:
             print(f"WS Reject: User {self.user.id} is not a member of Room {self.room_id}")
-            await self.accept()
             await self.close(code=4003)
             return
 
