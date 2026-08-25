@@ -22,7 +22,6 @@ const CONFIDENCE_STYLES = {
 
 function ConfidenceStamp({ level }) {
   const style = CONFIDENCE_STYLES[level];
-
   if (!style) return null;
 
   return (
@@ -44,7 +43,8 @@ function ConfidenceStamp({ level }) {
 }
 
 function formatTime(date) {
-  return date.toLocaleTimeString([], {
+  const d = date instanceof Date ? date : new Date(date);
+  return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -52,7 +52,7 @@ function formatTime(date) {
 
 export default function MessageBubble({
   message: m,
-  senderName,
+  senderName = '',
   showAvatar,
   showName,
   isGroup,
@@ -60,9 +60,8 @@ export default function MessageBubble({
 }) {
   const [showOriginal, setShowOriginal] = useState(false);
 
-  const isOwn = m.senderId === currentUser.id;
-  const userLang =
-    currentUser.preferred_language ?? currentUser.language;
+  const isOwn = m.senderId === currentUser?.id;
+  const userLang = currentUser?.preferred_language ?? currentUser?.language ?? 'en';
 
   if (isOwn) {
     return (
@@ -90,9 +89,9 @@ export default function MessageBubble({
   const translated = m.translations?.[userLang];
   const isUnavailable = translated === null;
   const displayText = isUnavailable ? m.text : (translated ?? m.text);
-  const hasTranslation =
-    translated !== undefined && translated !== null;
+  const hasTranslation = translated !== undefined && translated !== null;
   const confidence = m.confidence?.[userLang];
+  const initial = senderName ? senderName.charAt(0).toUpperCase() : '?';
 
   return (
     <div className="mb-1.5 flex items-end gap-2">
@@ -102,7 +101,7 @@ export default function MessageBubble({
             className="flex size-7 items-center justify-center rounded-full text-[11px] font-semibold text-white"
             style={{ background: 'var(--color-ink-soft)' }}
           >
-            {senderName?.[0]?.toUpperCase() ?? '?'}
+            {initial}
           </div>
         )}
       </div>
@@ -114,10 +113,11 @@ export default function MessageBubble({
             style={{ color: 'var(--color-ink-soft)' }}
           >
             {senderName}
-
-            <span className="ml-1.5 font-mono text-[10px] font-normal opacity-70">
-              · {LANGUAGE_LABELS[m.originalLang]}
-            </span>
+            {m.originalLang && LANGUAGE_LABELS[m.originalLang] && (
+              <span className="ml-1.5 font-mono text-[10px] font-normal opacity-70">
+                · {LANGUAGE_LABELS[m.originalLang]}
+              </span>
+            )}
           </p>
         )}
 
@@ -182,7 +182,7 @@ export default function MessageBubble({
 
                   {showOriginal
                     ? 'Hide original'
-                    : `Show original (${LANGUAGE_LABELS[m.originalLang]})`}
+                    : `Show original (${LANGUAGE_LABELS[m.originalLang] || m.originalLang})`}
                 </button>
               </div>
             </div>
