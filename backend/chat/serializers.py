@@ -13,12 +13,14 @@ class RoomMemberSerializer(serializers.Serializer):
 
 class RoomSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
-    # isGroup = serializers.BooleanField(source="is_group")
-    # inviteCode = serializers.CharField(source="invite_code")
+    # Uncomment these to enable camelCase output
+    isGroup = serializers.BooleanField(source="is_group")
+    inviteCode = serializers.CharField(source="invite_code")
 
     class Meta:
         model = Room
-        fields = ["id", "name", "is_group", "invite_code", "members"]
+        # Replace "is_group" and "invite_code" with their camelCase versions
+        fields = ["id", "name", "isGroup", "inviteCode", "members"]
 
     def get_members(self, room):
         users = [m.user for m in room.memberships.select_related("user").all()]

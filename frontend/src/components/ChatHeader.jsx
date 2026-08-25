@@ -13,7 +13,7 @@ export default function ChatHeader({ room, currentUser, onMenuOpen }) {
     >
       <button
         onClick={onMenuOpen}
-        className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg"
+        className="flex size-8 items-center justify-center rounded-lg lg:hidden"
         style={{ color: 'var(--color-ink-soft)' }}
       >
         <Menu size={18} />
@@ -21,8 +21,8 @@ export default function ChatHeader({ room, currentUser, onMenuOpen }) {
 
       <Avatar name={room.name} isGroup={room.isGroup} size={36} />
 
-      <div className="flex-1 min-w-0">
-        <h2 className="text-[14px] font-600 truncate" style={{ color: 'var(--color-ink)' }}>
+      <div className="min-w-0 flex-1">
+        <h2 className="truncate text-[14px] font-semibold" style={{ color: 'var(--color-ink)' }}>
           {room.name}
         </h2>
         <p className="text-[12px]" style={{ color: room.isOnline ? 'var(--color-bridge)' : 'var(--color-ink-soft)' }}>
@@ -34,7 +34,7 @@ export default function ChatHeader({ room, currentUser, onMenuOpen }) {
         {[...new Set(others.map((m) => m.language))].map((lang) => (
           <span
             key={lang}
-            className="font-mono text-[10px] font-600 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
+            className="flex size-6 items-center justify-center rounded-full border-2 border-white font-mono text-[10px] font-semibold"
             style={{ background: 'var(--color-bridge-dim)', color: 'var(--color-bridge)' }}
             title={LANGUAGE_LABELS[lang]}
           >

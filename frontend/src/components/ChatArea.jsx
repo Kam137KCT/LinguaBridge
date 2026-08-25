@@ -6,10 +6,12 @@ import { useChatSocket } from '../hooks/useChatSocket';
 
 function DateSeparator({ label }) {
   return (
-    <div className="flex items-center gap-3 my-4">
-      <div className="flex-1 h-px" style={{ background: 'var(--color-fog-dim)' }} />
-      <span className="font-mono text-[10.5px] px-2" style={{ color: 'var(--color-ink-soft)' }}>{label}</span>
-      <div className="flex-1 h-px" style={{ background: 'var(--color-fog-dim)' }} />
+    <div className="my-4 flex items-center gap-3">
+      <div className="h-px flex-1" style={{ background: 'var(--color-fog-dim)' }} />
+      <span className="px-2 font-mono text-[10.5px]" style={{ color: 'var(--color-ink-soft)' }}>
+        {label}
+      </span>
+      <div className="h-px flex-1" style={{ background: 'var(--color-fog-dim)' }} />
     </div>
   );
 }
@@ -22,7 +24,10 @@ function ConnectionBanner({ state }) {
     error: 'Connection error — messages will not send',
   };
   return (
-    <div className="text-center text-[12px] font-500 py-1.5" style={{ background: 'var(--color-marigold-dim)', color: 'var(--color-marigold)' }}>
+    <div
+      className="py-1.5 text-center text-[12px] font-medium"
+      style={{ background: 'var(--color-marigold-dim)', color: 'var(--color-marigold)' }}
+    >
       {labels[state]}
     </div>
   );
@@ -34,8 +39,12 @@ function groupByDate(msgs) {
   for (const msg of msgs) {
     const dateObj = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp);
     const diff = Math.floor((now - dateObj) / 86400000);
-    const label = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday'
-      : dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    const label =
+      diff === 0
+        ? 'Today'
+        : diff === 1
+        ? 'Yesterday'
+        : dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
     if (!map.has(label)) map.set(label, []);
     map.get(label).push({ ...msg, timestamp: dateObj });
   }
@@ -47,14 +56,21 @@ export default function ChatArea({ room, currentUser, onMenuOpen, onToast }) {
   const bottomRef = useRef(null);
   const prevCount = useRef(0);
 
+  // Reset previous message count when room changes to avoid false toast triggers
+  useEffect(() => {
+    prevCount.current = 0;
+  }, [room.id]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     if (messages.length > prevCount.current && prevCount.current > 0) {
       const last = messages[messages.length - 1];
-      if (last.senderId !== currentUser.id) onToast(`New message from ${last.senderName}`);
+      if (last && last.senderId !== currentUser.id) {
+        onToast(`New message from ${last.senderName}`);
+      }
     }
     prevCount.current = messages.length;
-  }, [messages]);
+  }, [messages, currentUser.id, onToast]);
 
   const handleSend = (text) => {
     sendMessage(text);
@@ -63,13 +79,13 @@ export default function ChatArea({ room, currentUser, onMenuOpen, onToast }) {
   const grouped = groupByDate(messages);
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-0" style={{ background: 'var(--color-fog)' }}>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col" style={{ background: 'var(--color-fog)' }}>
       <ChatHeader room={room} currentUser={currentUser} onMenuOpen={onMenuOpen} />
       <ConnectionBanner state={connectionState} />
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto p-4">
         {!historyLoaded && (
-          <p className="text-center text-[12.5px] mt-4" style={{ color: 'var(--color-ink-soft)' }}>
+          <p className="mt-4 text-center text-[12.5px]" style={{ color: 'var(--color-ink-soft)' }}>
             Loading messages...
           </p>
         )}

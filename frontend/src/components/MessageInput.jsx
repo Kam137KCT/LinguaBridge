@@ -34,15 +34,16 @@ export default function MessageInput({ onSend }) {
     <div className="px-4 py-3" style={{ background: 'white', borderTop: '1px solid var(--color-fog-dim)' }}>
       {showEmoji && (
         <div
-          className="mb-2 p-3 rounded-xl shadow-lg"
+          className="mb-2 rounded-xl p-3 shadow-lg"
           style={{ background: 'white', border: '1px solid var(--color-fog-dim)' }}
         >
           <div className="flex flex-wrap gap-2">
             {EMOJIS.map((e) => (
               <button
                 key={e}
+                type="button"
                 onClick={() => { setText((t) => t + e); setShowEmoji(false); }}
-                className="text-xl hover:scale-125 transition-transform"
+                className="text-xl transition-transform hover:scale-125"
               >
                 {e}
               </button>
@@ -53,15 +54,16 @@ export default function MessageInput({ onSend }) {
 
       <div className="flex items-end gap-2">
         <button
+          type="button"
           onClick={() => setShowEmoji((v) => !v)}
-          className="w-9 h-9 mb-0.5 flex items-center justify-center rounded-lg shrink-0"
+          className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg"
           style={{ color: showEmoji ? 'var(--color-bridge)' : 'var(--color-ink-soft)', background: showEmoji ? 'var(--color-bridge-dim)' : 'transparent' }}
         >
           <Smile size={18} />
         </button>
 
         <div
-          className="flex-1 flex items-end rounded-2xl"
+          className="flex flex-1 items-end rounded-2xl"
           style={{ background: 'var(--color-fog)', border: '1px solid var(--color-fog-dim)' }}
         >
           <textarea
@@ -71,15 +73,16 @@ export default function MessageInput({ onSend }) {
             onKeyDown={handleKeyDown}
             placeholder="Write a message..."
             rows={1}
-            className="flex-1 px-4 py-2.5 bg-transparent resize-none outline-none text-[13.5px] placeholder:text-gray-400 max-h-30 leading-relaxed"
+            className="max-h-30 flex-1 resize-none bg-transparent px-4 py-2.5 text-[13.5px] leading-relaxed outline-none placeholder:text-gray-400"
             style={{ color: 'var(--color-ink)' }}
           />
         </div>
 
         <button
+          type="button"
           onClick={handleSend}
           disabled={!text.trim()}
-          className="w-9 h-9 mb-0.5 flex items-center justify-center rounded-lg shrink-0 transition-all"
+          className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg transition-all"
           style={{
             background: text.trim() ? 'var(--color-bridge)' : 'var(--color-fog-dim)',
             color: text.trim() ? 'white' : '#A9B2AF',

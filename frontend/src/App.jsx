@@ -12,7 +12,8 @@ import { ToastContainer } from './components/Toast';
 let toastCounter = 0;
 
 export default function App() {
-  const [page, setPage] = useState('loading');
+  // Derive initial page lazily to prevent synchronous setState inside useEffect on mount
+  const [page, setPage] = useState(() => (getAccessToken() ? 'loading' : 'login'));
   const [currentUser, setCurrentUser] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
@@ -29,28 +30,25 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Restore session on load, if a still-valid token exists.
-  useEffect(() => {
-    if (!getAccessToken()) {
-      setPage('login');
-      return;
-    }
-    getMe()
-      .then((user) => {
-        setCurrentUser(user);
-        setPage('chat');
-      })
-      .catch(() => {
-        clearTokens();
-        setPage('login');
-      });
-  }, []);
-
   const refreshRooms = useCallback(async () => {
     setRoomsLoading(true);
     try {
       const data = await listRooms();
-      setRooms(data.map((r) => ({ ...r, isGroup: r.is_group, isOnline: true })));
+      const normalizedRooms = data.map((r) => ({
+        ...r,
+        isGroup: r.isGroup ?? r.is_group,
+        inviteCode: r.inviteCode ?? r.invite_code,
+        isOnline: true,
+      }));
+
+      setRooms(normalizedRooms);
+
+      setActiveId((currentId) => {
+        if (currentId && !normalizedRooms.some((r) => r.id === currentId)) {
+          return null;
+        }
+        return currentId;
+      });
     } catch (err) {
       addToast(`Couldn't load rooms: ${err.message}`);
     } finally {
@@ -58,19 +56,33 @@ export default function App() {
     }
   }, [addToast]);
 
+  // Restore session on load if an access token exists
   useEffect(() => {
-    if (page === 'chat') refreshRooms();
-  }, [page, refreshRooms]);
+    if (!getAccessToken()) return;
+
+    getMe()
+      .then((user) => {
+        setCurrentUser(user);
+        setPage('chat');
+        refreshRooms();
+      })
+      .catch(() => {
+        clearTokens();
+        setPage('login');
+      });
+  }, [refreshRooms]);
 
   const handleLogin = (user) => {
     setCurrentUser(user);
     setPage('chat');
+    refreshRooms();
     setTimeout(() => addToast(`Welcome back, ${user.username}`), 300);
   };
 
   const handleRegister = (user) => {
     setCurrentUser(user);
     setPage('chat');
+    refreshRooms();
     setTimeout(() => addToast(`Account created — welcome, ${user.username}`), 300);
   };
 
@@ -86,85 +98,100 @@ export default function App() {
     setSidebarOpen(false);
   };
 
-  const handleRoomReady = async () => {
+  const handleRoomReady = async (newRoom) => {
     await refreshRooms();
+    const targetId = typeof newRoom === 'object' ? newRoom?.id : newRoom;
+    if (targetId) {
+      setActiveId(targetId);
+    }
     setPage('chat');
   };
 
-  if (page === 'loading') {
-    return <div className="min-h-screen" style={{ background: 'var(--color-fog)' }} />;
-  }
-  if (page === 'login') {
-    return <LoginPage onLogin={handleLogin} onGoRegister={() => setPage('register')} />;
-  }
-  if (page === 'register') {
-    return <RegisterPage onRegister={handleRegister} onGoLogin={() => setPage('login')} />;
-  }
-  if (page === 'roomSetup') {
-    return <RoomSetupPage onBack={() => setPage('chat')} onRoomReady={handleRoomReady} />;
-  }
-  if (page === 'profile') {
-    return (
-      <>
+  const renderMainContent = () => {
+    if (page === 'loading') {
+      return <div className="min-h-screen" style={{ background: 'var(--color-fog)' }} />;
+    }
+    if (page === 'login') {
+      return <LoginPage onLogin={handleLogin} onGoRegister={() => setPage('register')} onToast={addToast} />;
+    }
+    if (page === 'register') {
+      return <RegisterPage onRegister={handleRegister} onGoLogin={() => setPage('login')} onToast={addToast} />;
+    }
+    if (page === 'roomSetup') {
+      return (
+        <RoomSetupPage
+          onBack={() => setPage('chat')}
+          onRoomReady={handleRoomReady}
+          onToast={addToast}
+        />
+      );
+    }
+    if (page === 'profile') {
+      return (
         <ProfilePage
           currentUser={currentUser}
           onBack={() => setPage('chat')}
           onLogout={handleLogout}
           onUserUpdate={setCurrentUser}
+          onToast={addToast}
         />
-        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      </>
-    );
-  }
+      );
+    }
 
-  const activeRoom = rooms.find((r) => r.id === activeId) || null;
+    const activeRoom = rooms.find((r) => r.id === activeId) || null;
+
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar
+          currentUser={currentUser}
+          rooms={rooms}
+          loading={roomsLoading}
+          activeId={activeId || ''}
+          onSelect={handleSelectRoom}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onOpenProfile={() => setPage('profile')}
+          onNewRoom={() => setPage('roomSetup')}
+        />
+
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {activeRoom ? (
+            <ChatArea
+              key={`${activeRoom.id}-${currentUser?.preferred_language || 'en'}`}
+              room={activeRoom}
+              currentUser={currentUser}
+              onMenuOpen={() => setSidebarOpen(true)}
+              onToast={addToast}
+            />
+          ) : (
+            <div className="flex flex-1 flex-col">
+              <div
+                className="flex items-center gap-3 px-4 py-3 lg:hidden"
+                style={{ background: 'white', borderBottom: '1px solid var(--color-fog-dim)' }}
+              >
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex size-8 items-center justify-center rounded-lg"
+                  style={{ background: 'var(--color-fog)', color: 'var(--color-ink-soft)' }}
+                >
+                  ☰
+                </button>
+                <span className="font-['display'] text-[15px] font-semibold" style={{ color: 'var(--color-ink)' }}>
+                  LinguaBridge
+                </span>
+              </div>
+              <EmptyState />
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        currentUser={currentUser}
-        rooms={rooms}
-        loading={roomsLoading}
-        activeId={activeId || ''}
-        onSelect={handleSelectRoom}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onOpenProfile={() => setPage('profile')}
-        onNewRoom={() => setPage('roomSetup')}
-      />
-
-      <main className="flex-1 flex flex-col min-w-0 min-h-0">
-        {activeRoom ? (
-          <ChatArea
-            key={`${activeRoom.id}-${currentUser?.preferred_language || 'en'}`}
-            room={activeRoom}
-            currentUser={currentUser}
-            onMenuOpen={() => setSidebarOpen(true)}
-            onToast={addToast}
-          />
-        ) : (
-          <div className="flex-1 flex flex-col">
-            <div
-              className="lg:hidden flex items-center gap-3 px-4 py-3"
-              style={{ background: 'white', borderBottom: '1px solid var(--color-fog-dim)' }}
-            >
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg"
-                style={{ background: 'var(--color-fog)', color: 'var(--color-ink-soft)' }}
-              >
-                ☰
-              </button>
-              <span className="font-display text-[15px] font-semibold" style={{ color: 'var(--color-ink)' }}>
-                LinguaBridge
-              </span>
-            </div>
-            <EmptyState />
-          </div>
-        )}
-      </main>
-
+    <>
+      {renderMainContent()}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-    </div>
+    </>
   );
 }

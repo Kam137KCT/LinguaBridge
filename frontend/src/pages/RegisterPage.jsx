@@ -50,26 +50,26 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex font-sans">
+    <div className="flex min-h-screen font-sans">
       {/* Left panel */}
       <div
-        className="hidden lg:flex flex-1 flex-col items-center justify-center px-16"
+        className="hidden flex-1 flex-col items-center justify-center px-16 lg:flex"
         style={{ background: 'var(--color-ink)' }}
       >
-        <div className="flex items-center gap-3 mb-14 self-start">
+        <div className="mb-14 flex items-center gap-3 self-start">
           <Postmark />
-          <span className="font-display text-2xl text-white tracking-tight">LinguaBridge</span>
+          <span className="font-['display'] text-2xl tracking-tight text-white">LinguaBridge</span>
         </div>
 
-        <div className="w-full max-w-xs space-y-3 mb-14">
+        <div className="mb-14 w-full max-w-xs space-y-3">
           {LANGUAGES.map((l) => (
             <div
               key={l}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg"
+              className="flex items-center gap-3 rounded-lg px-4 py-3"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.25)' }}
             >
               <span
-                className="font-mono text-[11px] font-600 px-1.5 py-0.5 rounded"
+                className="rounded px-1.5 py-0.5 font-mono text-[11px] font-semibold"
                 style={{ background: 'var(--color-bridge)', color: 'white' }}
               >
                 {l.toUpperCase()}
@@ -79,25 +79,25 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
           ))}
         </div>
 
-        <h2 className="font-display text-[24px] text-white text-center mb-2">Pick your language once.</h2>
-        <p className="text-[14px] text-center max-w-xs leading-relaxed" style={{ color: '#AEB9CC' }}>
+        <h2 className="mb-2 text-center font-['display'] text-[24px] text-white">Pick your language once.</h2>
+        <p className="max-w-xs text-center text-[14px] leading-relaxed" style={{ color: '#AEB9CC' }}>
           Every message you receive arrives already translated into it.
         </p>
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center px-8 overflow-y-auto py-10" style={{ background: 'var(--color-fog)' }}>
+      <div className="flex flex-1 items-center justify-center overflow-y-auto px-8 py-10" style={{ background: 'var(--color-fog)' }}>
         <div className="w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
+          <div className="mb-8 flex items-center gap-2 lg:hidden">
             <Postmark size={32} />
-            <span className="font-display text-lg text-ink">LinguaBridge</span>
+            <span className="font-['display'] text-lg text-(--color-ink)">LinguaBridge</span>
           </div>
 
-          <h1 className="font-display text-[28px] text-ink mb-1">Create account</h1>
-          <p className="text-[14px] mb-8" style={{ color: 'var(--color-ink-soft)' }}>Start chatting across languages</p>
+          <h1 className="mb-1 font-['display'] text-[28px] text-(--color-ink)">Create account</h1>
+          <p className="mb-8 text-[14px]" style={{ color: 'var(--color-ink-soft)' }}>Start chatting across languages</p>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg text-[13px] bg-red-50 text-red-600 border border-red-200 flex items-center gap-2">
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-[13px] text-red-600">
               <AlertCircle size={15} />
               <span>{error}</span>
             </div>
@@ -105,63 +105,63 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Full name</label>
+              <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: 'var(--color-ink-soft)' }}>Full name</label>
               <input
                 type="text" required value={form.fullName} onChange={set('fullName')}
                 placeholder="Alex Chen"
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
+                className="w-full rounded-lg bg-white px-3.5 py-2.5 text-[13.5px] text-(--color-ink) outline-none placeholder:text-gray-400"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Username</label>
+              <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: 'var(--color-ink-soft)' }}>Username</label>
               <input
                 type="text" required value={form.username} onChange={set('username')}
                 placeholder="alexchen"
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
+                className="w-full rounded-lg bg-white px-3.5 py-2.5 text-[13.5px] text-(--color-ink) outline-none placeholder:text-gray-400"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Email address</label>
+              <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: 'var(--color-ink-soft)' }}>Email address</label>
               <input
                 type="email" required value={form.email} onChange={set('email')}
                 placeholder="you@example.com"
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
+                className="w-full rounded-lg bg-white px-3.5 py-2.5 text-[13.5px] text-(--color-ink) outline-none placeholder:text-gray-400"
                 style={inputStyle}
               />
             </div>
 
             <div>
-              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Password</label>
+              <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: 'var(--color-ink-soft)' }}>Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'} required
                   value={form.password} onChange={set('password')}
                   placeholder="Min 8 characters"
-                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
+                  className="w-full rounded-lg bg-white px-3.5 py-2.5 pr-10 text-[13.5px] text-(--color-ink) outline-none placeholder:text-gray-400"
                   style={inputStyle}
                 />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Confirm password</label>
+              <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: 'var(--color-ink-soft)' }}>Confirm password</label>
               <div className="relative">
                 <input
                   type="password" required
                   value={form.confirmPassword} onChange={set('confirmPassword')}
                   placeholder="Repeat your password"
-                  className="w-full px-3.5 py-2.5 pr-10 text-[13.5px] rounded-lg outline-none bg-white text-ink placeholder:text-gray-400"
+                  className="w-full rounded-lg bg-white px-3.5 py-2.5 pr-10 text-[13.5px] text-(--color-ink) outline-none placeholder:text-gray-400"
                   style={inputStyle}
                 />
                 {form.confirmPassword && form.confirmPassword === form.password && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-bridge)' }}>
+                  <span className="absolute top-1/2 right-3 -translate-y-1/2" style={{ color: 'var(--color-bridge)' }}>
                     <Check size={16} />
                   </span>
                 )}
@@ -169,37 +169,37 @@ export default function RegisterPage({ onRegister, onGoLogin }) {
             </div>
 
             <div>
-              <label className="text-[12px] font-600 block mb-1.5" style={{ color: 'var(--color-ink-soft)' }}>Preferred language</label>
+              <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: 'var(--color-ink-soft)' }}>Preferred language</label>
               <select
                 value={form.language} onChange={set('language')}
-                className="w-full px-3.5 py-2.5 text-[13.5px] rounded-lg outline-none bg-white text-ink"
+                className="w-full rounded-lg bg-white px-3.5 py-2.5 text-[13.5px] text-(--color-ink) outline-none"
                 style={inputStyle}
               >
                 {LANGUAGES.map((l) => (
                   <option key={l} value={l}>{LANGUAGE_NAMES[l]}</option>
                 ))}
               </select>
-              <p className="text-[11.5px] mt-1.5" style={{ color: 'var(--color-ink-soft)' }}>
+              <p className="mt-1.5 text-[11.5px]" style={{ color: 'var(--color-ink-soft)' }}>
                 Incoming messages will be translated into this language. You can change it anytime.
               </p>
             </div>
 
             <button
               type="submit" disabled={loading}
-              className="w-full py-2.5 px-4 text-white text-[14px] font-600 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 mt-2"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[14px] font-semibold text-white transition-all disabled:opacity-70"
               style={{ background: 'var(--color-bridge)' }}
             >
               {loading ? (
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                <span className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
               ) : (
                 <>Create account <ArrowRight size={15} /></>
               )}
             </button>
           </form>
 
-          <p className="text-[13px] text-center mt-6" style={{ color: 'var(--color-ink-soft)' }}>
+          <p className="mt-6 text-center text-[13px]" style={{ color: 'var(--color-ink-soft)' }}>
             Already have an account?{' '}
-            <button onClick={onGoLogin} className="font-600" style={{ color: 'var(--color-bridge)' }}>Sign in</button>
+            <button onClick={onGoLogin} className="font-semibold" style={{ color: 'var(--color-bridge)' }}>Sign in</button>
           </p>
         </div>
       </div>

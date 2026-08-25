@@ -17,7 +17,7 @@ function normalizeMessage(payload) {
 
 export function useChatSocket(roomId) {
   const [messages, setMessages] = useState([]);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyLoadedRoomId, setHistoryLoadedRoomId] = useState(null);
   const [connectionState, setConnectionState] = useState('connecting');
   const socketRef = useRef(null);
   const messageMapRef = useRef(new Map());
@@ -29,41 +29,57 @@ export function useChatSocket(roomId) {
 
   useEffect(() => {
     if (!roomId) return;
-    setHistoryLoaded(false);
     messageMapRef.current = new Map();
+
+    // Use queueMicrotask to defer state update out of the immediate synchronous effect execution tick
+    queueMicrotask(() => {
+      setHistoryLoadedRoomId(null);
+    });
 
     getMessageHistory(roomId)
       .then((data) => {
-        for (const raw of data.results) {
-          const msg = normalizeMessage(raw);
-          messageMapRef.current.set(msg.id, msg);
+        if (data?.results) {
+          for (const raw of data.results) {
+            const msg = normalizeMessage(raw);
+            messageMapRef.current.set(msg.id, msg);
+          }
+          rebuildMessagesArray();
         }
-        rebuildMessagesArray();
-        setHistoryLoaded(true);
+        setHistoryLoadedRoomId(roomId);
       })
-      .catch(() => setHistoryLoaded(true));
+      .catch(() => setHistoryLoadedRoomId(roomId));
   }, [roomId, rebuildMessagesArray]);
 
   useEffect(() => {
     if (!roomId) return;
 
-    const token = getAccessToken();
-    const url = `${WS_BASE_URL}/ws/chat/${roomId}/?token=${token}`;
+    const token = getAccessToken() || '';
+    const wsProtocol = WS_BASE_URL.startsWith('https') ? 'wss://' : WS_BASE_URL.startsWith('http') ? 'ws://' : '';
+    const cleanBase = WS_BASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const url = `${wsProtocol || 'ws://'}${cleanBase}/ws/chat/${roomId}/?token=${token}`;
+    
     const socket = new WebSocket(url);
     socketRef.current = socket;
-    setConnectionState('connecting');
 
     socket.onopen = () => setConnectionState('open');
     socket.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-      const msg = normalizeMessage(payload);
-      messageMapRef.current.set(msg.id, msg);
-      rebuildMessagesArray();
+      try {
+        const payload = JSON.parse(event.data);
+        const msg = normalizeMessage(payload);
+        messageMapRef.current.set(msg.id, msg);
+        rebuildMessagesArray();
+      } catch (err) {
+        console.error('Failed to parse incoming WS message', err);
+      }
     };
     socket.onerror = () => setConnectionState('error');
     socket.onclose = () => setConnectionState('closed');
 
-    return () => socket.close();
+    return () => {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+    };
   }, [roomId, rebuildMessagesArray]);
 
   const sendMessage = useCallback((text) => {
@@ -72,5 +88,10 @@ export function useChatSocket(roomId) {
     }
   }, []);
 
-  return { messages, historyLoaded, connectionState, sendMessage };
+  return {
+    messages,
+    historyLoaded: historyLoadedRoomId === roomId,
+    connectionState,
+    sendMessage,
+  };
 }

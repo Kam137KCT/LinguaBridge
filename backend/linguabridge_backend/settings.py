@@ -5,36 +5,23 @@ Django settings for linguabridge_backend.
 import os
 from pathlib import Path
 from datetime import timedelta
+from urllib.parse import urlparse
 from dotenv import load_dotenv
+import dj_database_url
 
-# Load environment variables
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env")  # no-op in production if no .env file exists; Railway env vars are used instead
 
-REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-
-# SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key")
-# SECRET_KEY = os.getenv("SECRET_KEY")
-# DEBUG = os.getenv("DEBUG", "True") == "True"
-# if not SECRET_KEY and not DEBUG:
-    # raise ValueError("The SECRET_KEY environment variable must be set in production!")
-# Fallback only if DEBUG is True
-# SECRET_KEY = SECRET_KEY or "dev-only-insecure-key"
-
-# Configuration
+# --- Core config ---
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-# Security: Fetch key or handle missing values
 SECRET_KEY = os.getenv("SECRET_KEY")
-
 if not SECRET_KEY:
     if DEBUG:
         SECRET_KEY = "dev-only-insecure-key"
     else:
         raise ValueError("The SECRET_KEY environment variable must be set in production!")
 
-# ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
@@ -52,11 +39,11 @@ INSTALLED_APPS = [
     "accounts",
     "chat",
     "translation",
-    # project apps get added here from Milestone 3 onward, e.g. "chat",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -84,25 +71,42 @@ TEMPLATES = [
     },
 ]
 
-# ASGI, not WSGI — required for Channels/WebSocket support
 ASGI_APPLICATION = "linguabridge_backend.asgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "linguabridge"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+# --- Database: Railway's DATABASE_URL in production, discrete vars locally ---
+if os.getenv("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.parse(os.getenv("DATABASE_URL"), conn_max_age=600)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "linguabridge"),
+            "USER": os.getenv("DB_USER", "postgres"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
     }
-}
+
+# --- Redis: Railway's REDIS_URL in production, discrete vars locally ---
+REDIS_PASSWORD = None
+if os.getenv("REDIS_URL"):
+    REDIS_URL = os.getenv("REDIS_URL")
+    # Optional: parse hostname/port if other services need discrete variables
+    _redis_parsed = urlparse(REDIS_URL)
+    REDIS_HOST = _redis_parsed.hostname
+    REDIS_PORT = _redis_parsed.port
+else:
+    REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
+    REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}" if REDIS_PASSWORD else f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "hosts": [REDIS_URL],
         },
     },
 }
@@ -125,26 +129,14 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "COMPACT_JSON": True,
 }
 
-# SIMPLE_JWT = {
-#     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
-#     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-# }
-
 SIMPLE_JWT = {
-    # Expiration time for access tokens (e.g., 15 minutes, 1 hour, etc.)
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    
-    # Expiration time for refresh tokens (e.g., 1 day, 7 days, 30 days)
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    
-    # --- Optional Security Settings ---
-    # Issue a new refresh token whenever a token is refreshed
-    'ROTATE_REFRESH_TOKENS': True,
-    
-    # Invalidate the old refresh token after it is rotated
-    'BLACKLIST_AFTER_ROTATION': True,
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 LANGUAGE_CODE = "en-us"
@@ -153,9 +145,14 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Frontend dev server origin — needed once CORS is added in Milestone 6.
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
+# --- CORS: your deployed Vercel frontend, plus local dev by default ---
+CORS_ALLOWED_ORIGINS = os.getenv(
+    "CORS_ALLOWED_ORIGINS", "http://localhost:5173"
+).split(",")
+
+# --- Model loading behavior ---
+EAGER_LOAD_MODELS = os.getenv("EAGER_LOAD_MODELS", "False") == "True"

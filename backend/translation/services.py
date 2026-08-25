@@ -1,6 +1,6 @@
 import hashlib
 import json
-
+import threading
 import redis
 import torch
 from django.conf import settings
@@ -10,28 +10,41 @@ from .model_registry import (
     MODEL_MAP, TARGET_TOKEN, MODEL_ARCHITECTURE, NLLB_LANG_CODES,
     GENERATION_CONFIG, resolve_pivot,
 )
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+redis_password = getattr(settings, "REDIS_PASSWORD", None)
 
 _redis_client = redis.Redis(
     host=getattr(settings, "REDIS_HOST", "127.0.0.1"),
     port=int(getattr(settings, "REDIS_PORT", 6379)),
+    password=redis_password if redis_password else None,  # <-- Pass password here
     decode_responses=True,
 )
 
 CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 _loaded = {}
-
+_tokenizer_locks = {}
+_load_lock = threading.Lock()
 
 def _get_model_and_tokenizer(model_name):
     if model_name not in _loaded:
-        architecture = MODEL_ARCHITECTURE.get(model_name, "marian")
-        if architecture in ("mt5", "nllb"):
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        else:
-            tokenizer = MarianTokenizer.from_pretrained(model_name)
-            model = MarianMTModel.from_pretrained(model_name)
-        model.eval()
-        _loaded[model_name] = (model, tokenizer)
+        with _load_lock:
+            # Double-check inside the lock
+            if model_name not in _loaded:
+                architecture = MODEL_ARCHITECTURE.get(model_name, "marian")
+                if architecture in ("mt5", "nllb"):
+                    tokenizer = AutoTokenizer.from_pretrained(model_name)
+                    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+                else:
+                    tokenizer = MarianTokenizer.from_pretrained(model_name)
+                    model = MarianMTModel.from_pretrained(model_name)
+
+                model.eval()
+                model.to(DEVICE)
+                
+                _loaded[model_name] = (model, tokenizer)
+                _tokenizer_locks[model_name] = threading.Lock() 
+                
     return _loaded[model_name]
 
 
@@ -65,22 +78,27 @@ def _run_model(text, model_name, source_lang=None, target_lang=None, target_toke
         generate_kwargs["no_repeat_ngram_size"] = gen_config["no_repeat_ngram_size"]
 
     if architecture == "nllb":
-        # NLLB selects target language via forced_bos_token_id, not a
-        # text prefix — completely different mechanism from Marian's
-        # >>lang<< token trick.
-        tokenizer.src_lang = NLLB_LANG_CODES[source_lang]
         target_code = NLLB_LANG_CODES[target_lang]
         generate_kwargs["forced_bos_token_id"] = tokenizer.convert_tokens_to_ids(target_code)
-        input_text = text
+        
+        # 4. Use the lock to protect the shared tokenizer state safely
+        lock = _tokenizer_locks[model_name]
+        with lock:
+            tokenizer.src_lang = NLLB_LANG_CODES[source_lang]
+            inputs = tokenizer([text], return_tensors="pt", padding=True, truncation=True)
+            
     else:
         input_text = f"{target_token} {text}" if target_token else text
+        inputs = tokenizer([input_text], return_tensors="pt", padding=True, truncation=True)
 
-    inputs = tokenizer([input_text], return_tensors="pt", padding=True, truncation=True)
-
+    inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
+    # The lock is now released. Concurrent generation is thread-safe.
     with torch.no_grad():
         output = model.generate(**inputs, **generate_kwargs)
 
     translated_text = tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+
+    # ... (the rest of your scoring logic remains exactly the same)
 
     # Beam search: HuggingFace already computes a length-normalized
     # sequence score (sum of log-probs / length**length_penalty, with
@@ -108,6 +126,9 @@ def _run_model(text, model_name, source_lang=None, target_lang=None, target_toke
 
 
 def translate(text, source_lang, target_lang):
+    if not text or not text.strip():
+        return text, "high"
+
     if source_lang == target_lang:
         return text, "high"
 
