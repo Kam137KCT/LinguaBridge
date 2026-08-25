@@ -5,7 +5,9 @@ import Avatar from './Avatar';
 import Postmark from './Postmark';
 
 function formatTime(date) {
-  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
   if (mins < 1) return 'now';
   if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
@@ -44,7 +46,7 @@ export default function Sidebar({ rooms, loading, activeId, currentUser, onSelec
         <div className="px-5 pt-5 pb-4">
           <div className="mb-5 flex items-center gap-2.5">
             <Postmark size={32} />
-            <span className="text-[16px] font-semibold text-(--color-ink)">LinguaBridge</span>
+            <span className="text-[16px] font-semibold" style={{ color: 'var(--color-ink)' }}>LinguaBridge</span>
             <button
               onClick={onOpenProfile}
               className="ml-auto flex size-7 items-center justify-center rounded-lg"
@@ -61,7 +63,8 @@ export default function Sidebar({ rooms, loading, activeId, currentUser, onSelec
               placeholder="Search rooms..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-(--color-fog-dim) bg-(--color-fog) py-2 pr-3 pl-9 text-[13px] text-(--color-ink) outline-none"
+              className="w-full rounded-lg py-2 pr-3 pl-9 text-[13px] outline-none"
+              style={{ background: 'var(--color-fog)', border: '1px solid var(--color-fog-dim)', color: 'var(--color-ink)' }}
             />
           </div>
 
@@ -131,13 +134,13 @@ export default function Sidebar({ rooms, loading, activeId, currentUser, onSelec
           <button onClick={onOpenProfile} className="flex w-full items-center gap-3 rounded-lg p-2 text-left">
             <Avatar name={displayName} size={32} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-(--color-ink)">{displayName}</p>
+              <p className="truncate text-[13px] font-semibold" style={{ color: 'var(--color-ink)' }}>{displayName}</p>
             </div>
             <span
               className="rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold"
               style={{ background: 'var(--color-bridge-dim)', color: 'var(--color-bridge)' }}
             >
-              {LANGUAGE_LABELS[userLang]}
+              {LANGUAGE_LABELS[userLang] || userLang}
             </span>
           </button>
         </div>
