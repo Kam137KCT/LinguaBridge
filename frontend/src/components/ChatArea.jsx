@@ -56,11 +56,18 @@ export default function ChatArea({ room, currentUser, onMenuOpen, onToast }) {
   const bottomRef = useRef(null);
   const prevCount = useRef(0);
 
+  // Reset previous message count when room changes to avoid false toast triggers
+  useEffect(() => {
+    prevCount.current = 0;
+  }, [room.id]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     if (messages.length > prevCount.current && prevCount.current > 0) {
       const last = messages[messages.length - 1];
-      if (last.senderId !== currentUser.id) onToast(`New message from ${last.senderName}`);
+      if (last && last.senderId !== currentUser.id) {
+        onToast(`New message from ${last.senderName}`);
+      }
     }
     prevCount.current = messages.length;
   }, [messages, currentUser.id, onToast]);
